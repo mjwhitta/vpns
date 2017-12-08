@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+usage() {
+    echo "Usage: ${0/*\//} [OPTIONS]"
+    echo
+    echo "Install or uninstall vpn script"
+    echo
+    echo "Options:"
+    echo "    -h, --help"
+    echo "        Display this help message"
+    echo
+    echo "    -u, --uninstall"
+    echo "        Uninstall"
+    echo
+    exit $1
+}
+
+declare -a args
+action="install"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        "--") shift && args+=("$@") && break ;;
+        "-h"|"--help") usage 0 ;;
+        "-u"|"--uninstall") action="uninstall" ;;
+        *) args+=("$1") ;;
+    esac
+    shift
+done
+[[ -z ${args[@]} ]] || set -- "${args[@]}"
+
+[[ $# -eq 0 ]] || usage 1
+
+case "$action" in
+    "install")
+        sudo install -g root -m 755 -o root vpn /usr/local/bin
+        sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" /usr/local/bin/vpn
+        ;;
+    "uninstall") sudo rm -f /usr/local/bin/vpn ;;
+    *) usage 2 ;;
+esac

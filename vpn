@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+default_vpn() {
+    unset ret
+    if [[ -e /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
+        ret="$(head -n 1 /home/$SUDO_USER/.config/vpn/vpn.conf)"
+    elif [[ -e $HOME/.config/vpn/vpn.conf ]]; then
+        ret="$(head -n 1 $HOME/.config/vpn/vpn.conf)"
+    fi
+    echo "${ret:-pia}"
+    unset ret
+}
+
+usage() {
+    d="$(default_vpn)"
+    echo "Usage: ${0/*\//} [OPTIONS] -- [pass-thru options]"
+    echo
+    echo "This is a wrapper script for other vpn scripts. Supported"
+    echo "VPNs include PIA and WindScribe."
+    echo
+    echo "Options:"
+    echo "    -h, --help       Display this help message"
+    echo "    -l, --list       List included VPNs"
+    echo "    -v, --vpn=VPN    Use the specified VPN (default: $d)"
+    echo
+    exit $1
+}
+
+declare -a args
+action="vpn"
+vpn="$(default_vpn)"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        "--") shift && args+=("$@") && break ;;
+        "-h"|"--help") usage 0 ;;
+        "-l"|"--list") action="list" ;;
+        "-v"|"--vpn") shift; [[ $# -gt 0 ]] || usage 1
+            vpn="$1"
+            ;;
+        *) args+=("$1") ;;
+    esac
+    shift
+done
+[[ -z ${args[@]} ]] || set -- "${args[@]}"
+
+[[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 1
+
+case "$0" in
+    "./vpn") cd providers ;;
+    *) cd INSTALL_DIR/providers ;;
+esac
+
+case "$action" in
+    "list")
+        find . -maxdepth 1 -mindepth 1 -type d | sed "s#./##g" | sort
+        ;;
+    "vpn")
+        [[ -d $vpn ]] || usage 2
+        cd $vpn && sudo ./vpn.sh $@
+        ;;
+    *) usage 3
+esac
