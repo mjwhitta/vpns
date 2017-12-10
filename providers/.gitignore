@@ -1,4 +1,9 @@
 *
 !.gitignore
-!pia
-!windscribe
+!pia/*.ovpn
+!pia/vpn.sh
+!vpnbook/*.ovpn
+!vpnbook/creds.txt
+!vpnbook/vpn.sh
+!windscribe/*.ovpn
+!windscribe/vpn.sh

@@ -1,8 +1,8 @@
 ## VPNs
 
-This repo contains a few scripts to get you started with the PIA or
-WindScribe VPNs. After running the installer, the `vpn` script is
-added to `/usr/local/bin/` (should be in your path).
+This repo contains a few scripts to get you started with the PIA,
+VPNBook, or WindScribe VPNs. After running the installer, the `vpn`
+script is added to `/usr/local/bin/` (should be in your path).
 
 ### Installation
 
@@ -48,15 +48,28 @@ Actions:
 Options:
     -h, --help       Display this help message
     -r, --random     Use random VPN gateway
+$ vpn -v vpnbook -- -h
+Usage: vpn.sh [OPTIONS] <action>
+
+Connect to the VPNBook VPN using a set of gateways
+
+Actions:
+    list             List the gateway options
+    start            Connect to VPN
+    stop             Disconnect from VPN
+
+Options:
+    -h, --help       Display this help message
+    -r, --random     Use random VPN gateway
 ```
 
 ### Configuring
 
 There is minimal configuration support. Simply put the preferred VPN
 in `$HOME/.config/vpn/vpn.conf` to set the default VPN. You can also
-specify the index of the preferred PIA or WindScribe gateway in
-`$HOME/.config/vpn/pia.conf` and `$HOME/.config/vpn/windscribe.conf`
-respectively. The following command will help with that:
+specify the index of the preferred PIA, VPNBook, or WindScribe gateway
+in `$HOME/.config/vpn/pia.conf`, etc... The following command will
+help with that:
 
 ```
 $ cat -n <(vpn -v pia list)
@@ -80,9 +93,9 @@ subtract 1 from the numbers you see here**
 
 ### Adding more VPN providers
 
-Adding new providers is as easy as copying the `providers/pia` or
-`providers/windscribe` directory and modifying the `vpn.sh` script to
-fit your needs. Alternatively you can do whatever you want so long as
-you understand that the top-level `vpn` script (installed to
-`/usr/local/bin`) will simply `cd` to your new `providers/whatever`
-directory and run the `vpn.sh` script as `root`.
+Adding new providers is as easy as copying the `providers/pia`
+directory and modifying the `vpn.sh` script to fit your needs.
+Alternatively you can do whatever you want so long as you understand
+that the top-level `vpn` script (installed to `/usr/local/bin`) will
+simply `cd` to your new `providers/whatever` directory and run the
+`vpn.sh` script as `root`.
