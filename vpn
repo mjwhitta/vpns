@@ -35,8 +35,12 @@ while [[ $# -gt 0 ]]; do
         "--") shift && args+=("$@") && break ;;
         "-h"|"--help") usage 0 ;;
         "-l"|"--list") action="list" ;;
-        "-v"|"--vpn") shift; [[ $# -gt 0 ]] || usage 1
-            vpn="$1"
+        "-v"|"--vpn"*)
+            case "$1" in
+                *"="*) arg="${1/*=/}" ;;
+                *) shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
+            esac
+            vpn="$arg"
             ;;
         *) args+=("$1") ;;
     esac
