@@ -37,7 +37,10 @@ while [[ $# -gt 0 ]]; do
         "-l"|"--list") action="list" ;;
         "-v"|"--vpn"*)
             case "$1" in
-                *"="*) arg="${1/*=/}" ;;
+                "--"*"="*)
+                    arg="$(echo "$1" | sed -r "s/[^=]+=//")"
+                    [[ -n $arg ]] || usage 1
+                    ;;
                 *) shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
             esac
             vpn="$arg"
