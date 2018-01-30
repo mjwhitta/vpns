@@ -9,7 +9,7 @@ default_gateway() {
     elif [[ -e $HOME/.config/vpn/windscribe.conf ]]; then
         index="$(head -n 1 $HOME/.config/vpn/windscribe.conf)"
     fi
-    echo "${index:-50}" # US West
+    echo "${index:-51}" # US West
     unset index
 }
 
@@ -19,7 +19,7 @@ get_gateway() {
 
     case "$gateway_selection" in
         "random") let "index = $RANDOM % ${#gateways[@]}" ;;
-        *) let "index = $(default_gateway)" ;;
+        *) let "index = $(default_gateway) - 1" ;;
     esac
 
     echo "${gateways[$index]}"

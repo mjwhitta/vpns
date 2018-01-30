@@ -7,7 +7,7 @@ default_gateway() {
     elif [[ -e $HOME/.config/vpn/pia.conf ]]; then
         index="$(head -n 1 $HOME/.config/vpn/pia.conf)"
     fi
-    echo "${index:-34}" # Silicon Valley
+    echo "${index:-35}" # Silicon Valley
     unset index
 }
 
@@ -17,7 +17,7 @@ get_gateway() {
 
     case "$gateway_selection" in
         "random") let "index = $RANDOM % ${#gateways[@]}" ;;
-        *) let "index = $(default_gateway)" ;;
+        *) let "index = $(default_gateway) - 1" ;;
     esac
 
     echo "${gateways[$index]}.ovpn"

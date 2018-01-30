@@ -7,7 +7,7 @@ default_gateway() {
     elif [[ -e $HOME/.config/vpn/vpnbook.conf ]]; then
         index="$(head -n 1 $HOME/.config/vpn/vpnbook.conf)"
     fi
-    echo "${index:-22}" # us1-udp53
+    echo "${index:-23}" # us1-udp53
     unset index
 }
 
@@ -17,7 +17,7 @@ get_gateway() {
 
     case "$gateway_selection" in
         "random") let "index = $RANDOM % ${#gateways[@]}" ;;
-        *) let "index = $(default_gateway)" ;;
+        *) let "index = $(default_gateway) - 1" ;;
     esac
 
     echo "${gateways[$index]}.ovpn"

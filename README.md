@@ -68,7 +68,7 @@ Options:
 There is minimal configuration support. Simply put the preferred VPN
 in `$HOME/.config/vpn/vpn.conf` to set the default VPN. You can also
 specify the index of the preferred PIA, VPNBook, or WindScribe gateway
-in `$HOME/.config/vpn/pia.conf`, etc... The following command will
+in `$HOME/.config/vpn/pia.conf`, etc... The following commands will
 help with that:
 
 ```
@@ -79,6 +79,13 @@ $ cat -n <(vpn -v pia list)
      4	CA_Montreal
      5	CA_Toronto
     ...
+$ cat -n <(vpn -v vpnbook list)
+     1	ca1-tcp443
+     2	ca1-tcp80
+     3	ca1-udp25000
+     4	ca1-udp53
+     5	de233-tcp443
+    ...
 $ cat -n <(vpn -v windscribe list)
      1	Argentina
      2	Australia
@@ -87,9 +94,6 @@ $ cat -n <(vpn -v windscribe list)
      5	Belgium
     ...
 ```
-
-**Note: The lists in the scripts are 0-indexed so make sure to
-subtract 1 from the numbers you see here**
 
 ### Adding more VPN providers
 
