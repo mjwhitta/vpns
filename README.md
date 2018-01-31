@@ -65,11 +65,25 @@ Options:
 
 ### Configuring
 
-There is minimal configuration support. Simply put the preferred VPN
-in `$HOME/.config/vpn/vpn.conf` to set the default VPN. You can also
-specify the index of the preferred PIA, VPNBook, or WindScribe gateway
-in `$HOME/.config/vpn/pia.conf`, etc... The following commands will
-help with that:
+There is minimal configuration support. Your
+`$HOME/.config/vpn/vpn.conf` should look something like:
+
+```
+{
+    "default_gateway": "pia",
+    "pia": {
+        "gateway": 1
+    },
+    "vpnbook": {
+        "gateway": 1
+    },
+    "windscribe": {
+        "gateway": 1
+    }
+}
+```
+
+The following commands will help you find your preferred gateway:
 
 ```
 $ cat -n <(vpn -v pia list)

@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 
 default_gateway() {
-    unset index
-    if [[ -e /home/$SUDO_USER/.config/vpn/pia.conf ]]; then
-        index="$(head -n 1 /home/$SUDO_USER/.config/vpn/pia.conf)"
-    elif [[ -e $HOME/.config/vpn/pia.conf ]]; then
-        index="$(head -n 1 $HOME/.config/vpn/pia.conf)"
-    fi
-    echo "${index:-35}" # Silicon Valley
-    unset index
+    local ret
+    [[ -z $conf ]] || ret="$(cat $conf | jq -r ".pia.gateway")"
+    echo "${ret:-35}" # Silicon Valley
 }
 
 get_gateway() {
@@ -20,7 +15,7 @@ get_gateway() {
         *) let "index = $(default_gateway) - 1" ;;
     esac
 
-    echo "${gateways[$index]}.ovpn"
+    echo "${gateways[$index]}"
     unset gateways index
 }
 
@@ -30,10 +25,9 @@ list_gateways() {
 
 start_vpn() {
     gateway="$(get_gateway)"
-
     echo "Using gateway: $gateway"
     echo "If prompted, enter the password."
-    openvpn $gateway
+    openvpn $gateway.ovpn
 }
 
 stop_vpn() {
@@ -70,7 +64,12 @@ usage() {
 }
 
 declare -a args
-unset gateway_selection
+unset conf gateway_selection
+if [[ -f /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
+    conf="/home/$SUDO_USER/.config/vpn/vpn.conf"
+elif [[ -f $HOME/.config/vpn/vpn.conf ]]; then
+    conf="$HOME/.config/vpn/vpn.conf"
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -83,22 +82,17 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-[[ $# -eq 1 ]] || usage 2
+[[ $# -eq 1 ]] || usage 1
 
 if [[ -z $(command -v openvpn) ]]; then
-    echo "You need to install openvpn!"
-    exit 3
+    echo "openvpn is not installed"
+    exit 2
 fi
 
-case "$1" in
-    "list") ;;
-    *)
-        if [[ -z $(id | \grep "uid=0(root)") ]]; then
-            echo "You need to run as root!"
-            exit 4
-        fi
-        ;;
-esac
+if [[ $1 != "list" ]] && [[ -z $(id | \grep "uid=0(root)") ]]; then
+    echo "You need to run as root!"
+    exit 3
+fi
 
 trap stop_vpn SIGINT
 

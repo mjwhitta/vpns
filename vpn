@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 
 default_vpn() {
-    unset ret
-    if [[ -e /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
-        ret="$(head -n 1 /home/$SUDO_USER/.config/vpn/vpn.conf)"
-    elif [[ -e $HOME/.config/vpn/vpn.conf ]]; then
-        ret="$(head -n 1 $HOME/.config/vpn/vpn.conf)"
-    fi
+    local ret
+    [[ -z $conf ]] || ret="$(cat $conf | jq -r ".default_vpn")"
     echo "${ret:-pia}"
-    unset ret
 }
 
 usage() {
@@ -27,7 +22,13 @@ usage() {
 }
 
 declare -a args
+unset conf
 action="vpn"
+if [[ -f /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
+    conf="/home/$SUDO_USER/.config/vpn/vpn.conf"
+elif [[ -f $HOME/.config/vpn/vpn.conf ]]; then
+    conf="$HOME/.config/vpn/vpn.conf"
+fi
 vpn="$(default_vpn)"
 
 while [[ $# -gt 0 ]]; do
@@ -37,10 +38,7 @@ while [[ $# -gt 0 ]]; do
         "-l"|"--list") action="list" ;;
         "-v"|"--vpn"*)
             case "$1" in
-                "--"*"="*)
-                    arg="$(echo "$1" | sed -r "s/[^=]+=//")"
-                    [[ -n $arg ]] || usage 1
-                    ;;
+                "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
                 *) shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
             esac
             vpn="$arg"
@@ -51,7 +49,12 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-[[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 1
+[[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 2
+
+if [[ -z $(command -v jq) ]]; then
+    echo "jq is not installed"
+    exit 3
+fi
 
 case "$0" in
     "./vpn") cd providers ;;

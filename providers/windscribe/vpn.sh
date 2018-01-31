@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
 
 default_gateway() {
-    unset index
-    if [[ -e /home/$SUDO_USER/.config/vpn/windscribe.conf ]]; then
-        index="$(
-            head -n 1 /home/$SUDO_USER/.config/vpn/windscribe.conf
-        )"
-    elif [[ -e $HOME/.config/vpn/windscribe.conf ]]; then
-        index="$(head -n 1 $HOME/.config/vpn/windscribe.conf)"
-    fi
-    echo "${index:-51}" # US West
-    unset index
+    local ret
+    [[ -z $conf ]] || ret="$(cat $conf | jq -r ".windscribe.gateway")"
+    echo "${ret:-51}" # US West
 }
 
 get_gateway() {
@@ -71,7 +64,12 @@ usage() {
 }
 
 declare -a args
-unset gateway_selection
+unset conf gateway_selection
+if [[ -f /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
+    conf="/home/$SUDO_USER/.config/vpn/vpn.conf"
+elif [[ -f $HOME/.config/vpn/vpn.conf ]]; then
+    conf="$HOME/.config/vpn/vpn.conf"
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -84,22 +82,17 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-[[ $# -eq 1 ]] || usage 2
+[[ $# -eq 1 ]] || usage 1
 
 if [[ -z $(command -v openvpn) ]]; then
-    echo "You need to install openvpn!"
-    exit 3
+    echo "openvpn is not installed"
+    exit 2
 fi
 
-case "$1" in
-    "list") ;;
-    *)
-        if [[ -z $(id | \grep "uid=0(root)") ]]; then
-            echo "You need to run as root!"
-            exit 4
-        fi
-        ;;
-esac
+if [[ $1 != "list" ]] && [[ -z $(id | \grep "uid=0(root)") ]]; then
+    echo "You need to run as root!"
+    exit 3
+fi
 
 trap stop_vpn SIGINT
 
