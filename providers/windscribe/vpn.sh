@@ -3,6 +3,7 @@
 default_gateway() {
     local ret
     [[ -z $conf ]] || ret="$(cat $conf | jq -r ".windscribe.gateway")"
+    [[ $ret != "null" ]] || unset ret
     echo "${ret:-51}" # US West
 }
 

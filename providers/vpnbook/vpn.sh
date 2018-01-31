@@ -3,6 +3,7 @@
 default_gateway() {
     local ret
     [[ -z $conf ]] || ret="$(cat $conf | jq -r ".vpnbook.gateway")"
+    [[ $ret != "null" ]] || unset ret
     echo "${ret:-23}" # us1-udp53
 }
 

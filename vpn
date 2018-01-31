@@ -3,6 +3,7 @@
 default_vpn() {
     local ret
     [[ -z $conf ]] || ret="$(cat $conf | jq -r ".default_vpn")"
+    [[ $ret != "null" ]] || unset ret
     echo "${ret:-pia}"
 }
 
