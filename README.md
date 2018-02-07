@@ -70,7 +70,7 @@ There is minimal configuration support. Your
 
 ```
 {
-    "default_gateway": "pia",
+    "default_vpn": "pia",
     "pia": {
         "gateway": 1
     },
