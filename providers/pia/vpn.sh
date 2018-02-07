@@ -90,9 +90,14 @@ if [[ -z $(command -v openvpn) ]]; then
     exit 2
 fi
 
+if [[ -z $(command -v jq) ]]; then
+    echo "jq is not installed"
+    exit 3
+fi
+
 if [[ $1 != "list" ]] && [[ -z $(id | \grep "uid=0(root)") ]]; then
     echo "You need to run as root!"
-    exit 3
+    exit 4
 fi
 
 trap stop_vpn SIGINT
