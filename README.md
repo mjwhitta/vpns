@@ -1,8 +1,9 @@
 ## VPNs
 
 This repo contains a few scripts to get you started with the PIA,
-VPNBook, or WindScribe VPNs. After running the installer, the `vpn`
-script is added to `/usr/local/bin/` (should be in your path).
+ProtonVPN, VPNBook, or WindScribe VPNs. After running the installer,
+the `vpn` script is added to `/usr/local/bin/` (should be in your
+path).
 
 ### Installation
 
@@ -25,6 +26,20 @@ $ vpn -v pia -- -h
 Usage: vpn.sh [OPTIONS] <action>
 
 Connect to the PIA VPN using a set of gateways
+
+Actions:
+    list             List the gateway options
+    start            Connect to VPN
+    stop             Disconnect from VPN
+
+Options:
+    -h, --help       Display this help message
+    -r, --random     Use random VPN gateway
+
+$ vpn -v protonvpn -- -h
+Usage: vpn.sh [OPTIONS] <action>
+
+Connect to the ProtonVPN using a set of gateways
 
 Actions:
     list             List the gateway options
@@ -71,15 +86,10 @@ There is minimal configuration support. Your
 ```
 {
     "default_vpn": "pia",
-    "pia": {
-        "gateway": 1
-    },
-    "vpnbook": {
-        "gateway": 1
-    },
-    "windscribe": {
-        "gateway": 1
-    }
+    "pia": {"gateway": 1},
+    "protonvpn": {"gateway": 1}
+    "vpnbook": {"gateway": 1},
+    "windscribe": {"gateway": 1}
 }
 ```
 
@@ -92,6 +102,13 @@ $ cat -n <(vpn -v pia list)
      3	Brazil
      4	CA_Montreal
      5	CA_Toronto
+    ...
+$ cat -n <(vpn -v protonvpn list)
+     1	jp-01.protonvpn.com.tcp443
+     2	jp-01.protonvpn.com.udp1194
+     3	jp-02.protonvpn.com.tcp443
+     4	jp-02.protonvpn.com.udp1194
+     5	jp-free-01.protonvpn.com.tcp443
     ...
 $ cat -n <(vpn -v vpnbook list)
      1	ca1-tcp443
