@@ -2,6 +2,8 @@
 !.gitignore
 !pia/*.ovpn
 !pia/vpn.sh
+!protonvpn/*.ovpn
+!protonvpn/vpn.sh
 !vpnbook/*.ovpn
 !vpnbook/creds.txt
 !vpnbook/vpn.sh
