@@ -22,6 +22,11 @@ usage() {
     exit $1
 }
 
+if [[ -z $(command -v jq) ]]; then
+    echo "jq is not installed"
+    exit 3
+fi
+
 declare -a args
 unset conf
 action="vpn"
@@ -51,11 +56,6 @@ done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
 [[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 2
-
-if [[ -z $(command -v jq) ]]; then
-    echo "jq is not installed"
-    exit 3
-fi
 
 case "$0" in
     "./vpn") cd providers ;;
