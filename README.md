@@ -8,7 +8,7 @@ path).
 ### Installation
 
 ```
-$ git clone git@gitlab.com:mjwhitta/vpns.git ~/.vpns
+$ git clone https://gitlab.com/mjwhitta/vpns.git ~/.vpns
 $ cd ~/.vpns
 $ ./installer
 $ vpn -h
