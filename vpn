@@ -2,7 +2,7 @@
 
 default_vpn() {
     local ret
-    [[ -z $conf ]] || ret="$(cat $conf | jq -r ".default_vpn")"
+    [[ -z $conf ]] || ret="$(cat $conf | jq -cMrS ".default_vpn")"
     [[ $ret != "null" ]] || unset ret
     echo "${ret:-pia}"
 }
@@ -30,9 +30,7 @@ fi
 declare -a args
 unset conf
 action="vpn"
-if [[ -f /home/$SUDO_USER/.config/vpn/vpn.conf ]]; then
-    conf="/home/$SUDO_USER/.config/vpn/vpn.conf"
-elif [[ -f $HOME/.config/vpn/vpn.conf ]]; then
+if [[ -f $HOME/.config/vpn/vpn.conf ]]; then
     conf="$HOME/.config/vpn/vpn.conf"
 fi
 vpn="$(default_vpn)"
@@ -68,7 +66,7 @@ case "$action" in
         ;;
     "vpn")
         [[ -d $vpn ]] || usage 2
-        cd $vpn && sudo ./vpn.sh $@
+        cd $vpn && ./vpn.sh $@
         ;;
     *) usage 3
 esac
