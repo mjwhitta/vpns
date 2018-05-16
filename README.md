@@ -68,6 +68,20 @@ There is minimal configuration support. Your
 
 **Note: I recommend using the `encrypted` options**
 
+The encrypted options point to gpg encrypted files created with any of
+the following commands:
+
+```
+$ gpg -aer myemail@some.domain ./creds.txt
+$ gpg -aer myemail@some.domain ./password.txt
+$ gpg -aer myemail@some.domain ./username.txt
+```
+
+In `$HOME/.config/vpn/vpn.conf`, the path to the encrypted file can
+either be relative to that provider's directory, or an absolute path,
+so long as the absolute path doesn't contain `~` or environment
+variables like `$HOME` (meaning you should use `/home/user/...`).
+
 The following command will help you find your preferred gateway:
 
 ```
