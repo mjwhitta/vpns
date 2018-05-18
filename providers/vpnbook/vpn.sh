@@ -64,12 +64,8 @@ setup_creds() {
         fi
     fi
 
-    if [[ -z $username ]]; then
-        username="vpnbook"
-    fi
-    if [[ -z $password ]]; then
-        password="5f39ntx"
-    fi
+    [[ -n $username ]] || username="vpnbook"
+    [[ -n $password ]] || password="zAmra7WG"
 
     echo "$username" >creds.txt
     echo "$password" >>creds.txt
