@@ -123,7 +123,7 @@ unset conf gateway_selection
 if [[ -f $HOME/.config/vpn/vpn.conf ]]; then
     conf="$HOME/.config/vpn/vpn.conf"
 fi
-vpn="windscribe"
+vpn="$(basename $(pwd))"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
