@@ -62,7 +62,8 @@ esac
 
 case "$action" in
     "list")
-        find . -maxdepth 1 -mindepth 1 -type d | sed "s#./##g" | sort
+        find . -maxdepth 1 -mindepth 1 \( -type d -o -type l \) | \
+            sed "s#./##g" | sort
         ;;
     "vpn")
         [[ -d $vpn ]] || usage 2
