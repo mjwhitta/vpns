@@ -35,20 +35,42 @@ setup_creds() {
             cat $conf | jq -cMrS ".$vpn.encrypted_credsfile"
         )"
         if [[ $cfile != "null" ]]; then
-            gpg -dq $cfile >creds.txt
-            chmod 400 creds.txt
-            return
+            if [[ -f $confdir/$cfile ]]; then
+                gpg -dq $confdir/$cfile >creds.txt
+                chmod 400 creds.txt
+                return
+            elif [[ -f $cfile ]]; then
+                gpg -dq $cfile >creds.txt
+                chmod 400 creds.txt
+                return
+            else
+                echo "$cfile does not exist"
+            fi
         elif [[ $creds != "null" ]]; then
-            cp -f $creds creds.txt
-            chmod 400 creds.txt
-            return
+            if [[ -f $confdir/$creds ]]; then
+                cp -f $confdir/$creds creds.txt
+                chmod 400 creds.txt
+                return
+            elif [[ -f $creds ]]; then
+                cp -f $creds creds.txt
+                chmod 400 creds.txt
+                return
+            else
+                echo "$creds does not exist"
+            fi
         else
             password="$(cat $conf | jq -cMrS ".$vpn.password")"
             local pfile="$(
                 cat $conf | jq -cMrS ".$vpn.encrypted_password"
             )"
             if [[ $pfile != "null" ]]; then
-                password="$(gpg -dq $pfile)"
+                if [[ -f $confdir/$pfile ]]; then
+                    password="$(gpg -dq $confdir/$pfile)"
+                elif [[ -f $pfile ]]; then
+                    password="$(gpg -dq $pfile)"
+                else
+                    echo "$pfile does not exist"
+                fi
             elif [[ $password == "null" ]]; then
                 unset password
             fi
@@ -57,7 +79,13 @@ setup_creds() {
                 cat $conf | jq -cMrS ".$vpn.encrypted_username"
             )"
             if [[ $ufile != "null" ]]; then
-                username="$(gpg -dq $ufile)"
+                if [[ -f $confdir/$ufile ]]; then
+                    username="$(gpg -dq $confdir/$ufile)"
+                elif [[ -f $ufile ]]; then
+                    username="$(gpg -dq $ufile)"
+                else
+                    echo "$ufile does not exist"
+                fi
             elif [[ $username == "null" ]]; then
                 unset username
             fi
@@ -120,7 +148,8 @@ usage() {
 
 declare -a args
 unset conf gateway_selection
-if [[ -f $HOME/.config/vpn/vpn.conf ]]; then
+confdir="$HOME/.config/vpn"
+if [[ -f $confdir/vpn.conf ]]; then
     conf="$HOME/.config/vpn/vpn.conf"
 fi
 vpn="$(basename $(pwd))"
@@ -150,6 +179,7 @@ fi
 
 trap stop_vpn SIGINT
 
+mkdir -p $confdir
 case "$1" in
     "list") list_gateways ;;
     "start") start_vpn ;;

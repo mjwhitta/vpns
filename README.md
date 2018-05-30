@@ -78,9 +78,10 @@ $ gpg -aer myemail@some.domain ./username.txt
 ```
 
 In `$HOME/.config/vpn/vpn.conf`, the path to the encrypted file can
-either be relative to that provider's directory, or an absolute path,
-so long as the absolute path doesn't contain `~` or environment
-variables like `$HOME` (meaning you should use `/home/user/...`).
+either be relative to `$HOME/.config/vpn` or that provider's
+directory, or an absolute path, so long as the absolute path doesn't
+contain `~` or environment variables like `$HOME` (meaning you should
+use `/home/user/...`).
 
 The following command will help you find your preferred gateway:
 
