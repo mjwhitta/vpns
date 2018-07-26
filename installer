@@ -33,9 +33,10 @@ done
 
 case "$action" in
     "install")
-        sudo install -g root -m 755 -o root vpn /usr/local/bin
-        sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" /usr/local/bin/vpn
+        mkdir -p $HOME/bin
+        install -m 700 vpn $HOME/bin
+        sed -i -e "s#INSTALL_DIR#$(pwd)#g" $HOME/bin/vpn
         ;;
-    "uninstall") sudo rm -f /usr/local/bin/vpn ;;
+    "uninstall") rm -f $HOME/bin/vpn ;;
     *) usage 2 ;;
 esac
