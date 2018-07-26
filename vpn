@@ -1,45 +1,70 @@
 #!/usr/bin/env bash
 
 default_vpn() {
-    local ret
-    [[ -z $conf ]] || ret="$(cat $conf | jq -cMrS ".default_vpn")"
-    [[ $ret != "null" ]] || unset ret
+    local ret="$(json_get default_vpn)"
     echo "${ret:-pia}"
 }
 
+err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
+
+errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
+
+good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
+
+info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+
+json_get() {
+    [[ -z $conf ]] || jq -cMrS ".$@" $conf | sed -r "s/^null$//g"
+}
+
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
+    esac
+    echo "$arg"
+    return $shift
+}
+
 usage() {
-    d="$(default_vpn)"
     echo "Usage: ${0/*\//} [OPTIONS] -- [pass-thru options]"
     echo
     echo "This is a wrapper script for other vpn scripts. Supported"
-    echo "VPNs include PIA and WindScribe."
+    echo "VPNs include PIA, ProtonVPN, VPNBook, and WindScribe."
     echo
     echo "Options:"
     echo "    -h, --help       Display this help message"
     echo "    -l, --list       List included VPNs"
-    echo "    -v, --vpn=VPN    Use the specified VPN (default: $d)"
+    echo "    --nocolor        Disable colorized output"
+    local default="(default: $(default_vpn))"
+    echo "    -v, --vpn=VPN    Use the specified VPN $default"
     echo
     exit $1
 }
 
-if [[ -z $(command -v jq) ]]; then
-    echo "jq is not installed"
-    exit 3
-fi
+warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+
+for dep in jq; do
+    [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
+done; unset dep
 
 declare -a args
-unset conf
+unset conf help
 action="vpn"
+color="true"
 if [[ -f $HOME/.config/vpn/vpn.conf ]]; then
     conf="$HOME/.config/vpn/vpn.conf"
 fi
 vpn="$(default_vpn)"
 
+# Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift && args+=("$@") && break ;;
-        "-h"|"--help") usage 0 ;;
+        "-h"|"--help") help="true" ;;
         "-l"|"--list") action="list" ;;
+        "--nocolor") unset color ;;
         "-v"|"--vpn"*)
             case "$1" in
                 "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
@@ -53,6 +78,8 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
+# Check for valid params and missing dependencies
+[[ -z $help ]] || usage 0
 [[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 2
 
 case "$0" in

@@ -1,27 +1,49 @@
 #!/usr/bin/env bash
 
+err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
+
+errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
+
+good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
+
+info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
+    esac
+    echo "$arg"
+    return $shift
+}
+
 usage() {
     echo "Usage: ${0/*\//} [OPTIONS]"
     echo
     echo "Install or uninstall vpn script"
     echo
     echo "Options:"
-    echo "    -h, --help"
-    echo "        Display this help message"
-    echo
-    echo "    -u, --uninstall"
-    echo "        Uninstall"
+    echo "    -h, --help         Display this help message"
+    echo "    --nocolor          Disable colorized output"
+    echo "    -u, --uninstall    Uninstall"
     echo
     exit $1
 }
 
-declare -a args
-action="install"
+warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
 
+declare -a args
+unset help
+action="install"
+color="true"
+
+# Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift && args+=("$@") && break ;;
-        "-h"|"--help") usage 0 ;;
+        "-h"|"--help") help="true" ;;
+        "--nocolor") unset color ;;
         "-u"|"--uninstall") action="uninstall" ;;
         *) args+=("$1") ;;
     esac
@@ -29,14 +51,24 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
+# Check for valid params and missing dependencies
+[[ -z $help ]] || usage 0
 [[ $# -eq 0 ]] || usage 1
 
 case "$action" in
     "install")
+        info "Installing..."
         mkdir -p $HOME/bin
         install -m 700 vpn $HOME/bin
         sed -i -e "s#INSTALL_DIR#$(pwd)#g" $HOME/bin/vpn
+        good "Success"
+        info "Done"
         ;;
-    "uninstall") rm -f $HOME/bin/vpn ;;
+    "uninstall")
+        info "Uninstalling..."
+        rm -f $HOME/bin/vpn
+        good "Success"
+        info "Done"
+        ;;
     *) usage 2 ;;
 esac
