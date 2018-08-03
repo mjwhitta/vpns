@@ -131,8 +131,10 @@ stop_vpn() {
     info "done"
 }
 
+subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
+
 usage() {
-    echo "Usage: ${0/*\//} [OPTIONS] <action>"
+    echo "Usage: ${0##*/} [OPTIONS] <action>"
     echo
     echo "Connect to the VPNBook VPN using a set of gateways"
     echo
@@ -150,6 +152,10 @@ usage() {
 }
 
 warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+
+for dep in jq openvpn; do
+    [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
+done; unset dep
 
 declare -a args
 unset conf gateway_selection help
@@ -174,9 +180,6 @@ done
 # Check for valid params and missing dependencies
 [[ -z $help ]] || usage 0
 [[ $# -eq 1 ]] || usage 1
-for dep in jq openvpn; do
-    [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
-done; unset dep
 
 trap stop_vpn SIGINT
 

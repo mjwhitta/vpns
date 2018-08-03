@@ -27,8 +27,10 @@ long_opt() {
     return $shift
 }
 
+subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
+
 usage() {
-    echo "Usage: ${0/*\//} [OPTIONS] -- [pass-thru options]"
+    echo "Usage: ${0##*/} [OPTIONS] -- [pass-thru options]"
     echo
     echo "This is a wrapper script for other vpn scripts. Supported"
     echo "VPNs include PIA, ProtonVPN, VPNBook, and WindScribe."
@@ -53,9 +55,8 @@ declare -a args
 unset conf help
 action="vpn"
 color="true"
-if [[ -f $HOME/.config/vpn/vpn.conf ]]; then
-    conf="$HOME/.config/vpn/vpn.conf"
-fi
+confdir="$HOME/.config/vpn"
+[[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
 vpn="$(default_vpn)"
 
 # Parse command line options
@@ -65,13 +66,7 @@ while [[ $# -gt 0 ]]; do
         "-h"|"--help") help="true" ;;
         "-l"|"--list") action="list" ;;
         "--nocolor") unset color ;;
-        "-v"|"--vpn"*)
-            case "$1" in
-                "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
-                *) shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
-            esac
-            vpn="$arg"
-            ;;
+        "-v"|"--vpn"*) vpn="$(long_opt $@)" || shift ;;
         *) args+=("$1") ;;
     esac
     shift
@@ -80,21 +75,22 @@ done
 
 # Check for valid params and missing dependencies
 [[ -z $help ]] || usage 0
-[[ $action == "list" ]] || [[ $# -ge 1 ]] || usage 2
+[[ $# -gt 0 ]] || [[ $action == "list" ]] || usage 2
 
-case "$0" in
-    "./vpn") cd providers ;;
-    *) cd INSTALL_DIR/providers ;;
-esac
+providers="INSTALL_DIR/providers"
+[[ $0 != "./vpn" ]] || providers="providers"
 
-case "$action" in
-    "list")
-        find . -maxdepth 1 -mindepth 1 \( -type d -o -type l \) | \
-            sed "s#./##g" | sort
-        ;;
-    "vpn")
-        [[ -d $vpn ]] || usage 2
-        cd $vpn && ./vpn.sh $@
-        ;;
-    *) usage 3
-esac
+(
+    cd $providers
+    case "$action" in
+        "list")
+            find . -maxdepth 1 -mindepth 1 \( -type d -o -type l \) | \
+                sed "s#./##g" | sort
+            ;;
+        "vpn")
+            [[ -d $vpn ]] || usage 5
+            cd $vpn && ./vpn.sh $@
+            ;;
+        *) usage 4
+    esac
+)
