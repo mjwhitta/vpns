@@ -18,30 +18,40 @@ long_opt() {
     return $shift
 }
 
+subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
+
 usage() {
-    echo "Usage: ${0/*\//} [OPTIONS]"
+    echo "Usage: ${0##*/} [OPTIONS]"
     echo
     echo "Install or uninstall vpn script"
     echo
     echo "Options:"
-    echo "    -h, --help         Display this help message"
-    echo "    --nocolor          Disable colorized output"
-    echo "    -u, --uninstall    Uninstall"
+    echo "    -d, --dir=INSTALL_DIR    Install to specified directory"
+    echo "    -h, --help               Display this help message"
+    echo "    --nocolor                Disable colorized output"
+    echo "    -u, --uninstall          Uninstall"
     echo
     exit $1
 }
 
 warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
 
+# Check for missing dependencies
+# for dep in TODO; do
+#     [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
+# done; unset dep
+
 declare -a args
 unset help
 action="install"
 color="true"
+install_dir="$HOME/.local/bin"
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift && args+=("$@") && break ;;
+        "-d"|"--dir"*) install_dir="$(long_opt "$@")" || shift ;;
         "-h"|"--help") help="true" ;;
         "--nocolor") unset color ;;
         "-u"|"--uninstall") action="uninstall" ;;
@@ -51,24 +61,29 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-# Check for valid params and missing dependencies
+# Check for valid params
 [[ -z $help ]] || usage 0
-[[ $# -eq 0 ]] || usage 1
+[[ $# -eq 0 ]] || usage 2
 
+unset sudo
 case "$action" in
     "install")
         info "Installing..."
-        mkdir -p $HOME/bin
-        install -m 700 vpn $HOME/bin
-        sed -i -e "s#INSTALL_DIR#$(pwd)#g" $HOME/bin/vpn
-        good "Success"
-        info "Done"
+        mkdir -p $install_dir
+        [[ -w $install_dir ]] || sudo="sudo"
+        $sudo install -m 755 vpn $install_dir/vpn
+        $sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" $install_dir/vpn
         ;;
     "uninstall")
-        info "Uninstalling..."
-        rm -f $HOME/bin/vpn
-        good "Success"
-        info "Done"
+        if [[ -f $install_dir/vpn ]]; then
+            info "Uninstalling..."
+            [[ -w $install_dir ]] || sudo="sudo"
+            $sudo rm -f $install_dir/vpn
+        else
+            errx 3 "vpn is not installed in $install_dir"
+        fi
         ;;
     *) usage 2 ;;
 esac
+good "Success"
+info "Done"
