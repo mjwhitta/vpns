@@ -102,7 +102,9 @@ setup_creds() {
     fi
 
     [[ -n $username ]] || read -p "Enter username: " username
-    [[ -n $password ]] || read -p "Enter password: " -s password
+    if [[ -z $password ]]; then
+        read -p "Enter password: " -s password; echo
+    fi
 
     echo "$username" >creds.txt
     echo "$password" >>creds.txt
