@@ -1,63 +1,65 @@
 #!/usr/bin/env bash
 
+### Helpers begin
+checkdeps() {
+    for d in "${deps[@]}"; do
+        [[ -n $(command -v $d) ]] || errx 128 "$d is not installed"
+    done; unset d
+}
+err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
+errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
+good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
+info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 127; arg="$1" ;;
+    esac
+    echo "$arg"
+    return $shift
+}
+subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
+warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+### Helpers end
+
 default_vpn() {
     local ret="$(json_get default_vpn)"
     echo "${ret:-pia}"
 }
 
-err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
-
-errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
-
-good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
-
-info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
-
 json_get() {
     [[ -z $conf ]] || jq -cMrS ".$@" $conf | sed -r "s/^null$//g"
 }
 
-long_opt() {
-    local arg shift="0"
-    case "$1" in
-        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
-        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
-    esac
-    echo "$arg"
-    return $shift
-}
-
-subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
-
 usage() {
-    echo "Usage: ${0##*/} [OPTIONS] -- [pass-thru options]"
-    echo
-    echo "This is a wrapper script for other vpn scripts. Supported"
-    echo "VPNs include PIA, ProtonVPN, VPNBook, and WindScribe."
-    echo
-    echo "Options:"
-    echo "    -h, --help       Display this help message"
-    echo "    -l, --list       List included VPNs"
-    echo "    --nocolor        Disable colorized output"
-    local default="(default: $(default_vpn))"
-    echo "    -v, --vpn=VPN    Use the specified VPN $default"
-    echo
+    cat <<EOF
+Usage: ${0##*/} [OPTIONS] -- [pass-thru options]
+
+This is a wrapper script for other vpn scripts. Supported VPNs include
+PIA, ProtonVPN, VPNBook, and WindScribe.
+
+Options:
+    -h, --help       Display this help message
+    -l, --list       List included VPNs
+    --nocolor        Disable colorized output
+    -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
+
+EOF
     exit $1
 }
 
-warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
-
-for dep in jq; do
-    [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
-done; unset dep
-
-declare -a args
+declare -a args deps
 unset conf help
 action="vpn"
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
+deps+=("jq")
 vpn="$(default_vpn)"
+
+# Check for missing dependencies
+checkdeps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -73,9 +75,9 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-# Check for valid params and missing dependencies
+# Check for valid params
 [[ -z $help ]] || usage 0
-[[ $# -gt 0 ]] || [[ $action == "list" ]] || usage 2
+[[ $# -gt 0 ]] || [[ $action == "list" ]] || usage 1
 
 providers="INSTALL_DIR/providers"
 [[ $0 != "./vpn" ]] || providers="providers"
@@ -91,6 +93,6 @@ providers="INSTALL_DIR/providers"
             [[ -d $vpn ]] || usage 5
             cd $vpn && ./vpn.sh $@
             ;;
-        *) usage 4
+        *) usage 2
     esac
 )

@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
 
+### Helpers begin
+checkdeps() {
+    for d in "${deps[@]}"; do
+        [[ -n $(command -v $d) ]] || errx 128 "$d is not installed"
+    done; unset d
+}
 err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
-
 errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
+good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
+info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 127; arg="$1" ;;
+    esac
+    echo "$arg"
+    return $shift
+}
+subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
+warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+### Helpers end
 
 default_gateway() {
     local ret="$(json_get gateway)"
@@ -21,10 +40,6 @@ get_gateway() {
     echo "${gateways[$index]}"
 }
 
-good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
-
-info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
-
 json_get() {
     [[ -z $conf ]] || jq -cMrS ".$vpn.$@" $conf | sed -r "s/^null$//g"
 }
@@ -33,67 +48,63 @@ list_gateways() {
     find . -iname "*.ovpn" | sed -r "s#./|\.ovpn##g" | sort
 }
 
-long_opt() {
-    local arg shift="0"
-    case "$1" in
-        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 1 ;;
-        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 1; arg="$1" ;;
-    esac
-    echo "$arg"
-    return $shift
-}
-
 setup_creds() {
     rm -f creds.txt
 
-    local password username
+    local cfile creds password pfile tmp ufile username
 
     if [[ -n $conf ]]; then
-        local creds="$(json_get credsfile)"
-        local cfile="$(json_get encrypted_credsfile)"
+        cfile="$(json_get encrypted_credsfile)"
+        creds="$(json_get credsfile)"
         if [[ -n $cfile ]]; then
-            if [[ -f $confdir/$cfile ]]; then
-                gpg -dq $confdir/$cfile >creds.txt
-                chmod 400 creds.txt
-                return
-            elif [[ -f $cfile ]]; then
-                gpg -dq $cfile >creds.txt
-                chmod 400 creds.txt
-                return
+            tmp="$confdir/$cfile"
+            [[ -f $tmp ]] || tmp="$cfile"
+            if [[ -f $tmp ]]; then
+                while read -r line; do
+                    if [[ -z $username ]]; then
+                        username="$line"
+                        continue
+                    fi
+                    [[ -n $password ]] || password="$line"
+                    [[ -z $password ]] || break
+                done < <(gpg -dq $tmp 2>/dev/null)
             else
                 warn "$cfile does not exist"
             fi
         elif [[ -n $creds ]]; then
-            if [[ -f $confdir/$creds ]]; then
-                cp -f $confdir/$creds creds.txt
-                chmod 400 creds.txt
-                return
-            elif [[ -f $creds ]]; then
-                cp -f $creds creds.txt
-                chmod 400 creds.txt
-                return
+            tmp="$confdir/$creds"
+            [[ -f $tmp ]] || tmp="$creds"
+            if [[ -f $tmp ]]; then
+                while read -r line; do
+                    if [[ -z $username ]]; then
+                        username="$line"
+                        continue
+                    fi
+                    [[ -n $password ]] || password="$line"
+                    [[ -z $password ]] || break
+                done < <(cat $tmp; echo)
             else
                 warn "$creds does not exist"
             fi
         else
             password="$(json_get password)"
-            local pfile="$(json_get encrypted_password)"
+            pfile="$(json_get encrypted_password)"
             if [[ -n $pfile ]]; then
-                if [[ -f $confdir/$pfile ]]; then
-                    password="$(gpg -dq $confdir/$pfile)"
-                elif [[ -f $pfile ]]; then
-                    password="$(gpg -dq $pfile)"
+                tmp="$confdir/$pfile"
+                [[ -f $tmp ]] || tmp="$pfile"
+                if [[ -f $tmp ]]; then
+                    password="$(gpg -dq $tmp 2>/dev/null)"
                 else
                     warn "$pfile does not exist"
                 fi
             fi
+            ufile="$(json_get encrypted_username)"
             username="$(json_get username)"
-            local ufile="$(json_get encrypted_username)"
             if [[ -n $ufile ]]; then
-                if [[ -f $confdir/$ufile ]]; then
-                    username="$(gpg -dq $confdir/$ufile)"
-                elif [[ -f $ufile ]]; then
-                    username="$(gpg -dq $ufile)"
+                tmp="$confdir/$ufile"
+                [[ -f $tmp ]] || tmp="$ufile"
+                if [[ -f $tmp ]]; then
+                    username="$(gpg -dq $tmp 2>/dev/null)"
                 else
                     warn "$ufile does not exist"
                 fi
@@ -133,38 +144,37 @@ stop_vpn() {
     info "done"
 }
 
-subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
-
 usage() {
-    echo "Usage: ${0##*/} [OPTIONS] <action>"
-    echo
-    echo "Connect to the PIA VPN using a set of gateways"
-    echo
-    echo "Actions:"
-    echo "    list            List the gateway options"
-    echo "    start           Connect to VPN"
-    echo "    stop            Disconnect from VPN"
-    echo
-    echo "Options:"
-    echo "    -h, --help      Display this help message"
-    echo "    --nocolor       Disable colorized output"
-    echo "    -r, --random    Use random VPN gateway"
-    echo
+    cat <<EOF
+Usage: ${0##*/} [OPTIONS] <action>
+
+Connect to the PIA VPN using a set of gateways
+
+Actions:
+    list            List the gateway options
+    start           Connect to VPN
+    stop            Disconnect from VPN
+
+Options:
+    -h, --help      Display this help message
+    --nocolor       Disable colorized output
+    -r, --random    Use random VPN gateway
+
+EOF
     exit $1
 }
 
-warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
-
-for dep in jq openvpn; do
-    [[ -n $(command -v $dep) ]] || errx 3 "$dep is not installed"
-done; unset dep
-
-declare -a args
+declare -a args deps
 unset conf gateway_selection help
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
+deps+=("jq")
+deps+=("openvpn")
 vpn="$(basename $(pwd))"
+
+# Check for missing dependencies
+checkdeps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
