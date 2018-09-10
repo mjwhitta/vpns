@@ -49,7 +49,8 @@ list_gateways() {
 }
 
 setup_creds() {
-    rm -f creds.txt
+    mkdir -p $(dirname $credentials)
+    rm -f $credentials
 
     local cfile creds password pfile tmp ufile username
 
@@ -117,9 +118,9 @@ setup_creds() {
         read -p "Enter password: " -s password; echo
     fi
 
-    echo "$username" >creds.txt
-    echo "$password" >>creds.txt
-    chmod 400 creds.txt
+    echo "$username" >$credentials
+    echo "$password" >>$credentials
+    chmod 400 $credentials
 }
 
 start_vpn() {
@@ -140,7 +141,7 @@ stop_vpn() {
             sudo ip r d $route
         done < <(ip r | tail -n +2 | grep "via $default"); unset route
     fi
-    rm -f creds.txt
+    rm -f $credentials
     info "done"
 }
 
@@ -172,6 +173,7 @@ confdir="$HOME/.config/vpn"
 deps+=("jq")
 deps+=("openvpn")
 vpn="$(basename $(pwd))"
+credentials="creds.txt"
 
 # Check for missing dependencies
 checkdeps
@@ -189,7 +191,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z ${args[@]} ]] || set -- "${args[@]}"
 
-# Check for valid params and missing dependencies
+# Check for valid params
 [[ -z $help ]] || usage 0
 [[ $# -eq 1 ]] || usage 1
 
@@ -200,5 +202,5 @@ case "$1" in
     "list") list_gateways ;;
     "start") start_vpn ;;
     "stop") stop_vpn ;;
-    *) usage 5 ;;
+    *) usage 2 ;;
 esac
