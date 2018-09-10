@@ -34,15 +34,15 @@ json_get() {
 
 usage() {
     cat <<EOF
-Usage: ${0##*/} [OPTIONS] -- [pass-thru options]
+Usage: ${0##*/} [OPTIONS] <action> [vpn]
 
 This is a wrapper script for other vpn scripts. Supported VPNs include
 PIA, ProtonVPN, VPNBook, and WindScribe.
 
 Options:
     -h, --help       Display this help message
-    -l, --list       List included VPNs
     --nocolor        Disable colorized output
+    -r, --random     Use random VPN gateway
     -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
 
 EOF
@@ -50,13 +50,11 @@ EOF
 }
 
 declare -a args deps
-unset conf help
-action="vpn"
+unset action conf help nocolor random vpn
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
 deps+=("jq")
-vpn="$(default_vpn)"
 
 # Check for missing dependencies
 checkdeps
@@ -66,8 +64,8 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift && args+=("$@") && break ;;
         "-h"|"--help") help="true" ;;
-        "-l"|"--list") action="list" ;;
-        "--nocolor") unset color ;;
+        "--nocolor") nocolor="--nocolor"; unset color ;;
+        "-r"|"--random") random="--random" ;;
         "-v"|"--vpn"*) vpn="$(long_opt $@)" || shift ;;
         *) args+=("$1") ;;
     esac
@@ -77,7 +75,10 @@ done
 
 # Check for valid params
 [[ -z $help ]] || usage 0
-[[ $# -gt 0 ]] || [[ $action == "list" ]] || usage 1
+[[ $# -gt 0 ]] || usage 1
+
+action="$1"
+[[ -n $vpn ]] || [[ $# -eq 1 ]] || vpn="$2"
 
 providers="INSTALL_DIR/providers"
 [[ $0 != "./vpn" ]] || providers="providers"
@@ -85,14 +86,28 @@ providers="INSTALL_DIR/providers"
 (
     cd $providers
     case "$action" in
+        "help")
+            if [[ -n $vpn ]]; then
+                [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
+                cd $vpn && ./vpn.sh -h $nocolor $random
+            else
+                usage 0
+            fi
+            ;;
         "list")
-            find . -maxdepth 1 -mindepth 1 \( -type d -o -type l \) | \
-                sed "s#./##g" | sort
+            if [[ -n $vpn ]]; then
+                [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
+                cd $vpn && ./vpn.sh $nocolor $random $action
+            else
+                find . -maxdepth 1 -mindepth 1 \
+                    \( -type d -o -type l \) | sed "s#./##g" | sort
+            fi
             ;;
-        "vpn")
-            [[ -d $vpn ]] || usage 5
-            cd $vpn && ./vpn.sh $@
+        "start"|"stop")
+            [[ -n $vpn ]] || vpn="$(default_vpn)"
+            [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
+            cd $vpn && ./vpn.sh $nocolor $random $action
             ;;
-        *) usage 2
+        *) usage 3
     esac
 )
