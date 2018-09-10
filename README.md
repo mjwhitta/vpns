@@ -2,8 +2,8 @@
 
 This repo contains a few scripts to get you started with the PIA,
 ProtonVPN, VPNBook, or WindScribe VPNs. After running the installer,
-the `vpn` script is added to `/usr/local/bin/` (make sure it's in your
-path).
+the `vpn` script is added to `$HOME/.local/bin/` (make sure it's in
+your path).
 
 ### Installation
 
@@ -11,18 +11,19 @@ path).
 $ git clone https://gitlab.com/mjwhitta/vpns.git ~/.vpns
 $ cd ~/.vpns
 $ ./installer
-$ vpn -h
-Usage: vpn [OPTIONS] -- [pass-thru options]
+$ vpn help
+Usage: vpn [OPTIONS] <action> [vpn]
 
-This is a wrapper script for other vpn scripts. Currently
-included VPNs are: PIA and WindScribe
+This is a wrapper script for other vpn scripts. Supported VPNs include
+PIA, ProtonVPN, VPNBook, and WindScribe.
 
 Options:
     -h, --help       Display this help message
-    -l, --list       List included VPNs
+    --nocolor        Disable colorized output
+    -r, --random     Use random VPN gateway
     -v, --vpn=VPN    Use the specified VPN (default: pia)
 
-$ vpn -v pia -- -h
+$ vpn help pia
 Usage: vpn.sh [OPTIONS] <action>
 
 Connect to the PIA VPN using a set of gateways
@@ -34,6 +35,7 @@ Actions:
 
 Options:
     -h, --help      Display this help message
+    --nocolor       Disable colorized output
     -r, --random    Use random VPN gateway
 ```
 
@@ -86,7 +88,7 @@ use `/home/user/...`).
 The following command will help you find your preferred gateway:
 
 ```
-$ vpn -v pia list | less -N
+$ vpn list pia | less -N
      1	AU_Melbourne
      2	AU_Sydney
      3	Brazil
@@ -101,5 +103,5 @@ Adding new providers is as easy as copying the `providers/pia`
 directory to `providers/whatever` and then modifying its `vpn.sh`
 script to fit your needs. Alternatively you can do whatever you want
 so long as you understand that the top-level `vpn` script (installed
-to `/usr/local/bin`) will simply `cd` to your new `providers/whatever`
-directory and run the `vpn.sh`.
+to `$HOME/.local/bin`) will simply `cd` to your new
+`providers/whatever` directory and run the `vpn.sh`.
