@@ -25,7 +25,7 @@ warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 
 default_gateway() {
     local ret="$(json_get gateway)"
-    echo "${ret:-35}" # Silicon Valley
+    echo "${ret:-194}" # Silicon Valley
 }
 
 get_gateway() {
