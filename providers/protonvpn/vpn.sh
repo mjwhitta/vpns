@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 ### Helpers begin
-checkdeps() {
+check_deps() {
     for d in "${deps[@]}"; do
-        [[ -n $(command -v $d) ]] || errx 128 "$d is not installed"
+        [[ -n $(command -v "$d") ]] || errx 128 "$d is not installed"
     done; unset d
 }
-err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
-errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
-good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
-info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
+errx() { echo -e "${color:+\e[31m}[!] ${*:2}\e[0m"; exit "$1"; }
+good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
+info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
@@ -19,8 +19,8 @@ long_opt() {
     echo "$arg"
     return $shift
 }
-subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
-warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
+warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
 default_gateway() {
@@ -29,11 +29,15 @@ default_gateway() {
 }
 
 get_gateway() {
-    local -a gateways=($(list_gateways))
+    local -a gateways
+    local gateway
+    while read -r gateway; do
+        gateways+=("$gateway")
+    done < <(list_gateways); unset gateway
     local index="0"
 
     case "$gateway_selection" in
-        "random") index="$(( $RANDOM % ${#gateways[@]} ))" ;;
+        "random") index="$(( RANDOM % ${#gateways[@]} ))" ;;
         *) index="$(( $(default_gateway) - 1 ))" ;;
     esac
 
@@ -41,7 +45,10 @@ get_gateway() {
 }
 
 json_get() {
-    [[ -z $conf ]] || jq -cMrS ".$vpn.$@" $conf | sed -r "s/^null$//g"
+    if [[ -z $conf ]] || [[ ! -f "$conf" ]]; then
+        return
+    fi
+    jq -cMrS ".$vpn.$*" "$conf" | sed -r "s/^null$//g"
 }
 
 list_gateways() {
@@ -49,8 +56,8 @@ list_gateways() {
 }
 
 setup_creds() {
-    mkdir -p $(dirname $credentials)
-    rm -f $credentials
+    mkdir -p "$(dirname "$credentials")"
+    rm -f "$credentials"
 
     local cfile creds password pfile tmp ufile username
 
@@ -68,7 +75,7 @@ setup_creds() {
                     fi
                     [[ -n $password ]] || password="$line"
                     [[ -z $password ]] || break
-                done < <(gpg -dq $tmp 2>/dev/null)
+                done < <(gpg -dq "$tmp" 2>/dev/null)
             else
                 warn "$cfile does not exist"
             fi
@@ -83,7 +90,7 @@ setup_creds() {
                     fi
                     [[ -n $password ]] || password="$line"
                     [[ -z $password ]] || break
-                done < <(cat $tmp; echo)
+                done < <(cat "$tmp"; echo)
             else
                 warn "$creds does not exist"
             fi
@@ -94,7 +101,7 @@ setup_creds() {
                 tmp="$confdir/$pfile"
                 [[ -f $tmp ]] || tmp="$pfile"
                 if [[ -f $tmp ]]; then
-                    password="$(gpg -dq $tmp 2>/dev/null)"
+                    password="$(gpg -dq "$tmp" 2>/dev/null)"
                 else
                     warn "$pfile does not exist"
                 fi
@@ -105,7 +112,7 @@ setup_creds() {
                 tmp="$confdir/$ufile"
                 [[ -f $tmp ]] || tmp="$ufile"
                 if [[ -f $tmp ]]; then
-                    username="$(gpg -dq $tmp 2>/dev/null)"
+                    username="$(gpg -dq "$tmp" 2>/dev/null)"
                 else
                     warn "$ufile does not exist"
                 fi
@@ -113,27 +120,27 @@ setup_creds() {
         fi
     fi
 
-    [[ -n $username ]] || read -p "Enter username: " username
+    [[ -n $username ]] || read -p "Enter username: " -r username
     if [[ -z $password ]]; then
-        read -p "Enter password: " -s password; echo
+        read -p "Enter password: " -rs password; echo
     fi
 
-    echo "$username" >$credentials
-    echo "$password" >>$credentials
-    chmod 400 $credentials
+    echo "$username" >"$credentials"
+    echo "$password" >>"$credentials"
+    chmod 400 "$credentials"
 }
 
 start_vpn() {
     local gateway="$(get_gateway)"
     info "Using gateway: $gateway"
     setup_creds
-    sudo openvpn $gateway.ovpn
+    sudo openvpn "$gateway.ovpn"
     [[ $? -eq 0 ]] || stop_vpn
 }
 
 stop_vpn() {
     info "Killing process and cleaning up..."
-    [[ -z $(pgrep openvpn) ]] || sudo kill -9 $(pgrep openvpn)
+    [[ -z $(pgrep openvpn) ]] || sudo kill -9 "$(pgrep openvpn)"
     sleep 1
     if [[ -n $(command -v ip) ]]; then
         local default="$(ip r | awk '/default/ {print $3}')"
@@ -141,7 +148,7 @@ stop_vpn() {
             sudo ip r d $route
         done < <(ip r | tail -n +2 | grep "via $default"); unset route
     fi
-    rm -f $credentials
+    rm -f "$credentials"
     info "done"
 }
 
@@ -162,7 +169,7 @@ Options:
     -r, --random    Use random VPN gateway
 
 EOF
-    exit $1
+    exit "$1"
 }
 
 declare -a args deps
@@ -172,11 +179,11 @@ confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
 deps+=("jq")
 deps+=("openvpn")
-vpn="$(basename $(pwd))"
+vpn="$(basename "$(pwd)")"
 credentials="creds.txt"
 
 # Check for missing dependencies
-checkdeps
+check_deps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -189,7 +196,7 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
-[[ -z ${args[@]} ]] || set -- "${args[@]}"
+[[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
 # Check for valid params
 [[ -z $help ]] || usage 0
@@ -197,7 +204,7 @@ done
 
 trap stop_vpn SIGINT
 
-mkdir -p $confdir
+mkdir -p "$confdir"
 case "$1" in
     "list") list_gateways ;;
     "start") start_vpn ;;

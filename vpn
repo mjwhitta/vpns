@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 ### Helpers begin
-checkdeps() {
+check_deps() {
     for d in "${deps[@]}"; do
-        [[ -n $(command -v $d) ]] || errx 128 "$d is not installed"
+        [[ -n $(command -v "$d") ]] || errx 128 "$d is not installed"
     done; unset d
 }
-err() { echo -e "${color:+\e[31m}[!] $@\e[0m"; }
-errx() { echo -e "${color:+\e[31m}[!] ${@:2}\e[0m"; exit $1; }
-good() { echo -e "${color:+\e[32m}[+] $@\e[0m"; }
-info() { echo -e "${color:+\e[37m}[*] $@\e[0m"; }
+err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
+errx() { echo -e "${color:+\e[31m}[!] ${*:2}\e[0m"; exit "$1"; }
+good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
+info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
@@ -19,8 +19,8 @@ long_opt() {
     echo "$arg"
     return $shift
 }
-subinfo() { echo -e "${color:+\e[36m}[=] $@\e[0m"; }
-warn() { echo -e "${color:+\e[33m}[-] $@\e[0m"; }
+subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
+warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
 default_vpn() {
@@ -29,7 +29,10 @@ default_vpn() {
 }
 
 json_get() {
-    [[ -z $conf ]] || jq -cMrS ".$@" $conf | sed -r "s/^null$//g"
+    if [[ -z $conf ]] || [[ ! -f "$conf" ]]; then
+        return
+    fi
+    jq -cMrS ".$*" "$conf" | sed -r "s/^null$//g"
 }
 
 usage() {
@@ -46,18 +49,18 @@ Options:
     -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
 
 EOF
-    exit $1
+    exit "$1"
 }
 
 declare -a args deps
 unset action conf help nocolor random vpn
 color="true"
 confdir="$HOME/.config/vpn"
-[[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
+[[ ! -f "$confdir/vpn.conf" ]] || conf="$confdir/vpn.conf"
 deps+=("jq")
 
 # Check for missing dependencies
-checkdeps
+check_deps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -66,12 +69,12 @@ while [[ $# -gt 0 ]]; do
         "-h"|"--help") help="true" ;;
         "--nocolor") nocolor="--nocolor"; unset color ;;
         "-r"|"--random") random="--random" ;;
-        "-v"|"--vpn"*) vpn="$(long_opt $@)" || shift ;;
+        "-v"|"--vpn"*) vpn="$(long_opt "$@")" || shift ;;
         *) args+=("$1") ;;
     esac
     shift
 done
-[[ -z ${args[@]} ]] || set -- "${args[@]}"
+[[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
 # Check for valid params
 [[ -z $help ]] || usage 0
@@ -88,16 +91,16 @@ providers="INSTALL_DIR/providers"
     case "$action" in
         "help")
             if [[ -n $vpn ]]; then
-                [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
-                cd $vpn && ./vpn.sh -h $nocolor $random
+                [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
+                cd "$vpn" && ./vpn.sh -h $nocolor $random
             else
                 usage 0
             fi
             ;;
         "list")
             if [[ -n $vpn ]]; then
-                [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
-                cd $vpn && ./vpn.sh $nocolor $random $action
+                [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
+                cd "$vpn" && ./vpn.sh $nocolor $random "$action"
             else
                 find . -maxdepth 1 -mindepth 1 \
                     \( -type d -o -type l \) | sed "s#./##g" | sort
@@ -105,8 +108,8 @@ providers="INSTALL_DIR/providers"
             ;;
         "start"|"stop")
             [[ -n $vpn ]] || vpn="$(default_vpn)"
-            [[ -d $vpn ]] || errx 2 "$vpn doesn't exist"
-            cd $vpn && ./vpn.sh $nocolor $random $action
+            [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
+            cd "$vpn" && ./vpn.sh $nocolor $random "$action"
             ;;
         *) usage 3
     esac
