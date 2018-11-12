@@ -156,7 +156,7 @@ usage() {
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <action>
 
-Connect to the WindScribe VPN using a set of gateways
+Connect to the WindScribe VPN using a set of gateways.
 
 Actions:
     list            List the gateway options
