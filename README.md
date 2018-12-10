@@ -88,12 +88,12 @@ use `/home/user/...`).
 The following command will help you find your preferred gateway:
 
 ```
-$ vpn list pia | less -N
-     1	AU_Melbourne
-     2	AU_Sydney
-     3	Brazil
-     4	CA_Montreal
-     5	CA_Toronto
+$ vpn list pia
+     1	ae-aes-128-cbc-tcp-dns
+     2	ae-aes-128-cbc-udp-dns
+     3	ae-aes-256-cbc-tcp-dns
+     4	ae-aes-256-cbc-udp-dns
+     5	aus-aes-128-cbc-tcp-dns
     ...
 ```
 

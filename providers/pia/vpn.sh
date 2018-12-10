@@ -25,7 +25,7 @@ warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 
 default_gateway() {
     local ret="$(json_get gateway)"
-    echo "${ret:-194}" # Silicon Valley
+    echo "${ret:-195}" # Silicon Valley
 }
 
 get_gateway() {
@@ -33,7 +33,7 @@ get_gateway() {
     local gw
     while read -r gw; do
         gateways+=("$gw")
-    done < <(list_gateways); unset gw
+    done < <(list_gateways | awk '{print $2}'); unset gw
     local index="0"
 
     case "$gateway" in
@@ -53,7 +53,7 @@ json_get() {
 }
 
 list_gateways() {
-    find . -iname "*.ovpn" | sed -r "s#./|\.ovpn##g" | sort
+    cat -n <(find . -iname "*.ovpn" | sed -r "s#./|\.ovpn##g" | sort)
 }
 
 setup_creds() {

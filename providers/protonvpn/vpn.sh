@@ -33,7 +33,7 @@ get_gateway() {
     local gw
     while read -r gw; do
         gateways+=("$gw")
-    done < <(list_gateways); unset gw
+    done < <(list_gateways | awk '{print $2}'); unset gw
     local index="0"
 
     case "$gateway" in
@@ -53,7 +53,7 @@ json_get() {
 }
 
 list_gateways() {
-    find . -iname "*.ovpn" | sed -r "s#./|\.ovpn##g" | sort
+    cat -n <(find . -iname "*.ovpn" | sed -r "s#./|\.ovpn##g" | sort)
 }
 
 setup_creds() {
