@@ -30,15 +30,16 @@ default_gateway() {
 
 get_gateway() {
     local -a gateways
-    local gateway
-    while read -r gateway; do
-        gateways+=("$gateway")
-    done < <(list_gateways); unset gateway
+    local gw
+    while read -r gw; do
+        gateways+=("$gw")
+    done < <(list_gateways); unset gw
     local index="0"
 
-    case "$gateway_selection" in
+    case "$gateway" in
+        "") index="$(($(default_gateway) - 1))" ;;
         "random") index="$(( RANDOM % ${#gateways[@]} ))" ;;
-        *) index="$(( $(default_gateway) - 1 ))" ;;
+        *) index="$((gateway - 1))" ;;
     esac
 
     echo "${gateways[$index]}"
@@ -120,8 +121,10 @@ setup_creds() {
         fi
     fi
 
-    [[ -n $username ]] || username="vpnbook"
-    [[ -n $password ]] || password="RG3B8sh"
+    [[ -n $username ]] || read -p "Enter username: " -r username
+    if [[ -z $password ]]; then
+        read -p "Enter password: " -rs password; echo
+    fi
 
     echo "$username" >"$credentials"
     echo "$password" >>"$credentials"
@@ -129,10 +132,10 @@ setup_creds() {
 }
 
 start_vpn() {
-    local gateway="$(get_gateway)"
-    info "Using gateway: $gateway"
+    local gw="$(get_gateway)"
+    info "Using gateway: $gw"
     setup_creds
-    sudo openvpn "$gateway.ovpn"
+    sudo openvpn "$gw.ovpn"
     [[ $? -eq 0 ]] || stop_vpn
 }
 
@@ -162,6 +165,7 @@ Actions:
     stop            Disconnect from VPN
 
 Options:
+    -g, --gw=GW     Use the specified gateway
     -h, --help      Display this help message
     --nocolor       Disable colorized output
     -r, --random    Use random VPN gateway
@@ -171,7 +175,7 @@ EOF
 }
 
 declare -a args deps
-unset conf gateway_selection help
+unset conf gateway help
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
@@ -187,9 +191,10 @@ check_deps
 while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift && args+=("$@") && break ;;
+        "-g"|"--gw"*) gateway="$(long_opt "$@")" || shift ;;
         "-h"|"--help") help="true" ;;
         "--nocolor") unset color ;;
-        "-r"|"--random") gateway_selection="random" ;;
+        "-r"|"--random") gateway="random" ;;
         *) args+=("$1") ;;
     esac
     shift
