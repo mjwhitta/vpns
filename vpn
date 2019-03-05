@@ -43,6 +43,12 @@ Usage: ${0##*/} [OPTIONS] <action> [vpn]
 This is a wrapper script for other vpn scripts. Any OpenVPN provider
 should be supported.
 
+Actions:
+    help             Display this help message
+    list             List the vpn options
+    start            Connect to VPN
+    stop             Disconnect from VPN
+
 Options:
     -g, --gw=GW      Use the specified gateway
     -h, --help       Display this help message

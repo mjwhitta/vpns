@@ -167,6 +167,7 @@ Usage: vpn [OPTIONS] <action> $provider
 Connect to the $name VPN using a set of gateways.
 
 Actions:
+    help            Display this help message
     list            List the gateway options
     start           Connect to VPN
     stop            Disconnect from VPN
