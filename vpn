@@ -24,23 +24,24 @@ warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
 default_vpn() {
-    local ret="$(json_get default_vpn)"
+    local ret="$(json_get "default_vpn")"
     echo "${ret:-pia}"
 }
 
 json_get() {
-    if [[ -z $conf ]] || [[ ! -f "$conf" ]]; then
+    local config="${2:-$conf}"
+    if [[ -z $config ]] || [[ ! -f "$config" ]]; then
         return
     fi
-    jq -cMrS ".$*" "$conf" | sed -r "s/^null$//g"
+    jq -cMrS ".$1" "$config" | sed -r "s/^null$//g"
 }
 
 usage() {
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <action> [vpn]
 
-This is a wrapper script for other vpn scripts. Supported VPNs include
-PIA, ProtonVPN, VPNBook, and WindScribe.
+This is a wrapper script for other vpn scripts. Any OpenVPN provider
+should be supported.
 
 Options:
     -g, --gw=GW      Use the specified gateway
@@ -90,30 +91,52 @@ providers="INSTALL_DIR/providers"
 
 (
     cd $providers
+
+    case "$action" in
+        "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
+    esac
+    if [[ -n $vpn ]]; then
+        [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
+        cd "$vpn"
+        case "$(json_get "type" vpn.conf)" in
+            "openconnect"|"openvpn") ;;
+            *) errx 3 "Provider not configured" ;;
+        esac
+    fi
+
     case "$action" in
         "help")
             if [[ -n $vpn ]]; then
-                [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
-                cd "$vpn" && ./vpn.sh -h $nocolor $random
+                case "$(json_get "type" vpn.conf)" in
+                    "openconnect") ./vpn.sh -h $nocolor ;;
+                    "openvpn") ../../openvpn.sh -h $nocolor ;;
+                esac
             else
                 usage 0
             fi
             ;;
         "list")
             if [[ -n $vpn ]]; then
-                [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
-                cd "$vpn" && ./vpn.sh $nocolor $random "$action"
+                case "$(json_get "type" vpn.conf)" in
+                    "openconnect") ./vpn.sh $nocolor list ;;
+                    "openvpn") ../../openvpn.sh $nocolor list ;;
+                esac
             else
                 find . -maxdepth 1 -mindepth 1 \
                     \( -type d -o -type l \) | sed "s#./##g" | sort
             fi
             ;;
         "start"|"stop")
-            [[ -n $vpn ]] || vpn="$(default_vpn)"
-            [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
-            cd "$vpn"
-            ./vpn.sh ${gw:+--gw $gw} $nocolor $random "$action"
+            case "$(json_get "type" vpn.conf)" in
+                "openconnect")
+                    ./vpn.sh ${gw:+-g $gw} $nocolor $random "$action"
+                    ;;
+                "openvpn")
+                    ../../openvpn.sh ${gw:+-g $gw} $nocolor $random \
+                        "$action"
+                    ;;
+            esac
             ;;
-        *) usage 3
+        *) usage 4
     esac
 )

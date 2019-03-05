@@ -23,9 +23,14 @@ subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
 warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
+conf_get() {
+    [[ -f "vpn.conf" ]] || errx 3 "Provider not configured"
+    jq -cMrS ".$1" "vpn.conf" | sed -r "s/^null$//g"
+}
+
 default_gateway() {
     local ret="$(json_get gateway)"
-    echo "${ret:-195}" # Silicon Valley
+    echo "${ret:-$(conf_get "default_gateway")}"
 }
 
 get_gateway() {
@@ -38,7 +43,7 @@ get_gateway() {
 
     case "$gateway" in
         "") index="$(($(default_gateway) - 1))" ;;
-        "random") index="$(( RANDOM % ${#gateways[@]} ))" ;;
+        "random") index="$((RANDOM % ${#gateways[@]}))" ;;
         *) index="$((gateway - 1))" ;;
     esac
 
@@ -154,10 +159,12 @@ stop_vpn() {
 }
 
 usage() {
+    local name="$(conf_get "name")"
+    local provider="$(basename "$PWD")"
     cat <<EOF
-Usage: ${0##*/} [OPTIONS] <action>
+Usage: vpn [OPTIONS] <action> $provider
 
-Connect to the PIA VPN using a set of gateways.
+Connect to the $name VPN using a set of gateways.
 
 Actions:
     list            List the gateway options
