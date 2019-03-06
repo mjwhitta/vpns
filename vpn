@@ -61,7 +61,7 @@ EOF
 }
 
 declare -a args deps
-unset action conf help gw nocolor random vpn
+unset action clr conf help gw rand vpn
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f "$confdir/vpn.conf" ]] || conf="$confdir/vpn.conf"
@@ -76,8 +76,8 @@ while [[ $# -gt 0 ]]; do
         "--") shift && args+=("$@") && break ;;
         "-g"|"--gw"*) gw="$(long_opt "$@")" || shift ;;
         "-h"|"--help") help="true" ;;
-        "--nocolor") nocolor="--nocolor"; unset color ;;
-        "-r"|"--random") random="--random" ;;
+        "--nocolor") clr="--nocolor"; unset color ;;
+        "-r"|"--random") rand="--random" ;;
         "-v"|"--vpn"*) vpn="$(long_opt "$@")" || shift ;;
         *) args+=("$1") ;;
     esac
@@ -105,7 +105,8 @@ providers="INSTALL_DIR/providers"
         [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
         cd "$vpn"
         case "$(json_get "type" vpn.conf)" in
-            "openconnect"|"openvpn") ;;
+            "openconnect") script="./vpn.sh" ;;
+            "openvpn") script="../../openvpn.sh" ;;
             *) errx 3 "Provider not configured" ;;
         esac
     fi
@@ -113,36 +114,20 @@ providers="INSTALL_DIR/providers"
     case "$action" in
         "help")
             if [[ -n $vpn ]]; then
-                case "$(json_get "type" vpn.conf)" in
-                    "openconnect") ./vpn.sh -h $nocolor ;;
-                    "openvpn") ../../openvpn.sh -h $nocolor ;;
-                esac
+                $script -h $clr
             else
                 usage 0
             fi
             ;;
         "list")
             if [[ -n $vpn ]]; then
-                case "$(json_get "type" vpn.conf)" in
-                    "openconnect") ./vpn.sh $nocolor list ;;
-                    "openvpn") ../../openvpn.sh $nocolor list ;;
-                esac
+                $script $clr list
             else
                 find . -maxdepth 1 -mindepth 1 \
                     \( -type d -o -type l \) | sed "s#./##g" | sort
             fi
             ;;
-        "start"|"stop")
-            case "$(json_get "type" vpn.conf)" in
-                "openconnect")
-                    ./vpn.sh ${gw:+-g $gw} $nocolor $random "$action"
-                    ;;
-                "openvpn")
-                    ../../openvpn.sh ${gw:+-g $gw} $nocolor $random \
-                        "$action"
-                    ;;
-            esac
-            ;;
+        "start"|"stop") $script ${gw:+-g $gw} $clr $rand "$action" ;;
         *) usage 4
     esac
 )
