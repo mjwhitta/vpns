@@ -152,7 +152,10 @@ stop_vpn() {
         local default="$(ip r | awk '/default/ {print $3}')"
         while read -r route; do
             sudo ip r d $route
-        done < <(ip r | tail -n +2 | grep "via $default"); unset route
+        done < <(
+            ip r | tail -n +2 | grep -is "via $default" | \
+            grep -isv "static"
+        ); unset route
     fi
     rm -f "$credentials"
     info "done"
