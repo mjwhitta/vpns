@@ -154,7 +154,7 @@ stop_vpn() {
             sudo ip r d $route
         done < <(
             ip r | tail -n +2 | grep -is "via $default" | \
-            grep -isv "/|^default|static|"
+            grep -iPsv "/|^default|static|"
         ); unset route
     fi
     rm -f "$credentials"
