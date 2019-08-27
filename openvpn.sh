@@ -146,7 +146,7 @@ start_vpn() {
 
 stop_vpn() {
     info "Killing process and cleaning up..."
-    [[ -z $(pgrep openvpn) ]] || sudo kill -9 "$(pgrep openvpn)"
+    sudo pkill -9 -P $$ openvpn
     sleep 1
     if [[ -n $(command -v ip) ]]; then
         local default="$(ip r | awk '/default/ {print $3}')"
@@ -164,6 +164,7 @@ stop_vpn() {
 usage() {
     local name="$(conf_get "name")"
     local provider="$(basename "$PWD")"
+    # stop            Disconnect from VPN
     cat <<EOF
 Usage: vpn [OPTIONS] <action> $provider
 
@@ -173,7 +174,6 @@ Actions:
     help            Display this help message
     list            List the gateway options
     start           Connect to VPN
-    stop            Disconnect from VPN
 
 Options:
     -g, --gw=GW     Use the specified gateway
@@ -222,6 +222,6 @@ mkdir -p "$confdir"
 case "$1" in
     "list") list_gateways ;;
     "start") start_vpn ;;
-    "stop") stop_vpn ;;
+    # "stop") stop_vpn ;;
     *) usage 2 ;;
 esac

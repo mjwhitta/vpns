@@ -37,6 +37,7 @@ json_get() {
 }
 
 usage() {
+    # stop             Disconnect from VPN
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <action> [vpn]
 
@@ -47,7 +48,6 @@ Actions:
     help             Display this help message
     list             List the vpn options
     start            Connect to VPN
-    stop             Disconnect from VPN
 
 Options:
     -g, --gw=GW      Use the specified gateway
@@ -99,7 +99,8 @@ providers="INSTALL_DIR/providers"
     cd $providers
 
     case "$action" in
-        "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
+        "start") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
+        # "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
     esac
     if [[ -n $vpn ]]; then
         [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
@@ -127,7 +128,8 @@ providers="INSTALL_DIR/providers"
                     \( -type d -o -type l \) | sed "s#./##g" | sort
             fi
             ;;
-        "start"|"stop") $script ${gw:+-g $gw} $clr $rand "$action" ;;
+        "start") $script ${gw:+-g $gw} $clr $rand "$action" ;;
+        # "start"|"stop") $script ${gw:+-g $gw} $clr $rand "$action" ;;
         *) usage 4
     esac
 )
