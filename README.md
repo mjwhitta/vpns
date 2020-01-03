@@ -19,7 +19,7 @@ PIA, ProtonVPN, VPNBook, and WindScribe.
 
 Options:
     -h, --help       Display this help message
-    --nocolor        Disable colorized output
+    --no-color       Disable colorized output
     -r, --random     Use random VPN gateway
     -v, --vpn=VPN    Use the specified VPN (default: pia)
 
@@ -35,7 +35,7 @@ Actions:
 
 Options:
     -h, --help      Display this help message
-    --nocolor       Disable colorized output
+    --no-color      Disable colorized output
     -r, --random    Use random VPN gateway
 ```
 
@@ -74,6 +74,9 @@ The encrypted options point to gpg encrypted files created with any of
 the following commands:
 
 ```
+$ cat ./creds.txt
+myusername
+mypassword
 $ gpg -aer myemail@some.domain ./creds.txt
 $ gpg -aer myemail@some.domain ./password.txt
 $ gpg -aer myemail@some.domain ./username.txt
@@ -100,8 +103,14 @@ $ vpn list pia
 ### Adding more VPN providers
 
 Adding new providers is as easy as copying the `providers/pia`
-directory to `providers/whatever` and then modifying its `vpn.sh`
+directory to `providers/whatever` and then modifying its `vpn.conf`
 script to fit your needs. Alternatively you can do whatever you want
 so long as you understand that the top-level `vpn` script (installed
 to `$HOME/.local/bin`) will simply `cd` to your new
-`providers/whatever` directory and run the `vpn.sh`.
+`providers/whatever` directory and run the top-level `openvpn.sh`
+script.
+
+While Openconnect does work, you will need to write your own `vpn.sh`
+script in that provider's directory. Then modify the `type` in
+`vpn.conf` to be `openconnect`. I would like to improve on this later
+but am not yet sure how to make 2FA configurable in a generic way.

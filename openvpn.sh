@@ -2,12 +2,20 @@
 
 ### Helpers begin
 check_deps() {
+    local missing
     for d in "${deps[@]}"; do
-        [[ -n $(command -v "$d") ]] || errx 128 "$d is not installed"
+        if [[ -z $(command -v "$d") ]]; then
+            # Force absolute path
+            if [[ ! -f "/$d" ]]; then
+                err "$d was not found"
+                missing="true"
+            fi
+        fi
     done; unset d
+    [[ -z $missing ]] || exit 128
 }
 err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
-errx() { echo -e "${color:+\e[31m}[!] ${*:2}\e[0m"; exit "$1"; }
+errx() { err "${*:2}"; exit "$1"; }
 good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
 info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
@@ -178,7 +186,7 @@ Actions:
 Options:
     -g, --gw=GW     Use the specified gateway
     -h, --help      Display this help message
-    --nocolor       Disable colorized output
+    --no-color      Disable colorized output
     -r, --random    Use random VPN gateway
 
 EOF
@@ -204,7 +212,7 @@ while [[ $# -gt 0 ]]; do
         "--") shift && args+=("$@") && break ;;
         "-g"|"--gw"*) gateway="$(long_opt "$@")" || shift ;;
         "-h"|"--help") help="true" ;;
-        "--nocolor") unset color ;;
+        "--no-color") unset color ;;
         "-r"|"--random") gateway="random" ;;
         *) args+=("$1") ;;
     esac
