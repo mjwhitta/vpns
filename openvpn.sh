@@ -15,7 +15,7 @@ check_deps() {
     [[ -z $missing ]] || exit 128
 }
 err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
-errx() { err "${*:2}"; exit "$1"; }
+errx() { err "${*:2}"; rm -f "$credentials"; exit "$1"; }
 good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
 info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
@@ -148,6 +148,7 @@ start_vpn() {
     local gw="$(get_gateway)"
     info "Using gateway: $gw"
     setup_creds
+    (sleep 10 && rm -f "$credentials") &
     sudo openvpn "$gw.ovpn"
     [[ $? -eq 0 ]] || stop_vpn
 }
