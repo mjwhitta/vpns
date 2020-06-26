@@ -45,23 +45,32 @@ json_get() {
 }
 
 usage() {
-    # stop             Disconnect from VPN
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <action> [vpn]
 
 This is a wrapper script for other vpn scripts. Any OpenVPN provider
-should be supported.
+should be supported. Wireguard configs are supported. OpenConnect will
+require some work on the user's part.
 
 Actions:
     help             Display this help message
     list             List the vpn options
     start            Connect to VPN
+    stop             Disconnect from VPN (wireguard only)
 
 Options:
     -g, --gw=GW      Use the specified gateway
     -h, --help       Display this help message
     --no-color       Disable colorized output
     -r, --random     Use random VPN gateway
+$(
+    if [[ -n $(command -v tmux) ]]; then
+        cat <<EOL
+    -t, --tmux       Use tmux to start VPN connection in background
+                     (avoid symlinks for now)
+EOL
+    fi
+)
     -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
 
 EOF
@@ -72,9 +81,8 @@ declare -a args deps
 unset action clr conf help gw rand vpn
 color="true"
 confdir="$HOME/.config/vpn"
-[[ ! -f "$confdir/vpn.conf" ]] || conf="$confdir/vpn.conf"
+[[ ! -f "$confdir/vpn.cfg" ]] || conf="$confdir/vpn.cfg"
 deps+=("jq")
-deps+=("openvpn")
 
 # Check for missing dependencies
 check_deps
@@ -87,6 +95,7 @@ while [[ $# -gt 0 ]]; do
         "-h"|"--help") help="true" ;;
         "--no-color") clr="--nocolor"; unset color ;;
         "-r"|"--random") rand="--random" ;;
+        "-t"|"--tmux") tmux="true" ;;
         "-v"|"--vpn"*) vpn="$(long_opt "$@")" || shift ;;
         *) args+=("$1") ;;
     esac
@@ -108,15 +117,15 @@ providers="INSTALL_DIR/providers"
     cd $providers
 
     case "$action" in
-        "start") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
-        # "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
+        "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
     esac
     if [[ -n $vpn ]]; then
         [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
         cd "$vpn"
-        case "$(json_get "type" vpn.conf)" in
+        case "$(json_get "type" vpn.cfg)" in
             "openconnect") script="./vpn.sh" ;;
-            "openvpn") script="../../openvpn.sh" ;;
+            "openvpn") script="../../scripts/openvpn.sh" ;;
+            "wireguard") script="../../scripts/wireguard.sh" ;;
             *) errx 3 "Provider not configured" ;;
         esac
     fi
@@ -137,8 +146,37 @@ providers="INSTALL_DIR/providers"
                     \( -type d -o -type l \) | sed "s#./##g" | sort
             fi
             ;;
-        "start") $script ${gw:+-g $gw} $clr $rand "$action" ;;
-        # "start"|"stop") $script ${gw:+-g $gw} $clr $rand "$action" ;;
+        "start")
+            unset detached
+
+            if [[ -n $tmux ]] && [[ -n $(command -v tmux) ]]; then
+                if [[ -n $TMUX ]]; then
+                    detached="true"
+                    script="tmux new -d -s $vpn $script"
+                else
+                    script="tmux new -A -s $vpn $script"
+                fi
+            fi
+
+            $script ${gw:+-g $gw} $clr $rand "$action"
+
+            if [[ -n $detached ]]; then
+                if [[ -n $(tmux ls | grep -Ps "^$vpn:") ]]; then
+                    tmux switch-client -t "$vpn"
+                fi
+            fi
+            ;;
+        "stop")
+            if [[ -n $tmux ]] && [[ -n $(command -v tmux) ]]; then
+                if [[ -n $TMUX ]]; then
+                    tmux switch-client -t "$vpn"
+                else
+                    tmux attach -t "$vpn"
+                fi
+            else
+                $script ${gw:+-g $gw} $clr $rand "$action"
+            fi
+            ;;
         *) usage 4
     esac
 )

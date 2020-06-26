@@ -1,10 +1,6 @@
 *
 !.gitignore
-!pia/*.ovpn
-!pia/vpn.conf
-!protonvpn/*.ovpn
-!protonvpn/vpn.conf
-!vpnbook/*.ovpn
-!vpnbook/vpn.conf
-!windscribe/*.ovpn
-!windscribe/vpn.conf
+!pia
+!protonvpn
+!vpnbook
+!windscribe

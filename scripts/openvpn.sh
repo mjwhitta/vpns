@@ -32,8 +32,8 @@ warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
 conf_get() {
-    [[ -f "vpn.conf" ]] || errx 3 "Provider not configured"
-    jq -cMrS ".$1" "vpn.conf" | sed -r "s/^null$//g"
+    [[ -f "vpn.cfg" ]] || errx 3 "Provider not configured"
+    jq -cMrS ".$1" "vpn.cfg" | sed -r "s/^null$//g"
 }
 
 default_gateway() {
@@ -146,14 +146,23 @@ setup_creds() {
 
 start_vpn() {
     local gw="$(get_gateway)"
+
+    ../../scripts/dnsmasq.sh start
+
     info "Using gateway: $gw"
     setup_creds
     (sleep 10 && rm -f "$credentials") &
     sudo openvpn "$gw.ovpn"
-    [[ $? -eq 0 ]] || stop_vpn
+    [[ $? -eq 0 ]] || stop_vpn 0
 }
 
 stop_vpn() {
+    case "${1:-1}" in
+        "1") echo ;;
+    esac
+
+    ../../scripts/dnsmasq.sh stop
+
     info "Killing process and cleaning up..."
     sudo pkill -9 -P $$ openvpn
     sleep 1
@@ -168,11 +177,15 @@ stop_vpn() {
     fi
     rm -f "$credentials"
     info "done"
+
+    case "${1:-1}" in
+        "1") kill -9 $$ ;;
+    esac
 }
 
 usage() {
     local name="$(conf_get "name")"
-    local provider="$(basename "$PWD")"
+    local provider="$(basename "$(pwd)")"
     # stop            Disconnect from VPN
     cat <<EOF
 Usage: vpn [OPTIONS] <action> $provider
@@ -198,7 +211,7 @@ declare -a args deps
 unset conf gateway help
 color="true"
 confdir="$HOME/.config/vpn"
-[[ ! -f $confdir/vpn.conf ]] || conf="$confdir/vpn.conf"
+[[ ! -f $confdir/vpn.cfg ]] || conf="$confdir/vpn.cfg"
 deps+=("jq")
 deps+=("openvpn")
 vpn="$(basename "$(pwd)")"

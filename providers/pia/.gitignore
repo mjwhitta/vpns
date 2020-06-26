@@ -1,0 +1,4 @@
+*
+!.gitignore
+!*.ovpn
+!vpn.cfg
