@@ -6,7 +6,7 @@ check_deps() {
     for d in "${deps[@]}"; do
         if [[ -z $(command -v "$d") ]]; then
             # Force absolute path
-            if [[ ! -f "/$d" ]]; then
+            if [[ ! -e "/$d" ]]; then
                 err "$d was not found"
                 missing="true"
             fi
@@ -21,8 +21,8 @@ info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
-        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 127 ;;
-        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 127; arg="$1" ;;
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || return 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || return 127; arg="$1" ;;
     esac
     echo "$arg"
     return $shift
@@ -90,14 +90,19 @@ check_deps
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        "--") shift && args+=("$@") && break ;;
-        "-g"|"--gw"*) gw="$(long_opt "$@")" || shift ;;
+        "--") shift; args+=("$@"); break ;;
+        "-g"|"--gw"*) gw="$(long_opt "$@")" ;;
         "-h"|"--help") help="true" ;;
-        "--no-color") clr="--nocolor"; unset color ;;
+        "--no-color") clr="--no-color"; unset color ;;
         "-r"|"--random") rand="--random" ;;
         "-t"|"--tmux") tmux="true" ;;
-        "-v"|"--vpn"*) vpn="$(long_opt "$@")" || shift ;;
+        "-v"|"--vpn"*) vpn="$(long_opt "$@")" ;;
         *) args+=("$1") ;;
+    esac
+    case "$?" in
+        0) ;;
+        1) shift ;;
+        *) usage $? ;;
     esac
     shift
 done

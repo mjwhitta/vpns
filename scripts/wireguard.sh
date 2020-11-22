@@ -21,8 +21,8 @@ info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
-        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || usage 127 ;;
-        *) shift="1"; shift; [[ $# -gt 0 ]] || usage 127; arg="$1" ;;
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || return 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || return 127; arg="$1" ;;
     esac
     echo "$arg"
     return $shift
@@ -91,7 +91,7 @@ stop_vpn() {
 usage() {
     local name="$(conf_get "name")"
     local provider="$(basename "$(pwd)")"
-    # stop            Disconnect from VPN
+
     cat <<EOF
 Usage: vpn [OPTIONS] <action> $provider
 
@@ -118,10 +118,10 @@ unset conf gateway help
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.cfg ]] || conf="$confdir/vpn.cfg"
+credentials="creds.txt"
 deps+=("jq")
 deps+=("wg-quick")
 vpn="$(basename "$(pwd)")"
-credentials="creds.txt"
 
 # Check for missing dependencies
 check_deps
@@ -129,12 +129,17 @@ check_deps
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        "--") shift && args+=("$@") && break ;;
-        "-g"|"--gw"*) gateway="$(long_opt "$@")" || shift ;;
+        "--") shift; args+=("$@"); break ;;
+        "-g"|"--gw"*) gateway="$(long_opt "$@")" ;;
         "-h"|"--help") help="true" ;;
         "--no-color") unset color ;;
         "-r"|"--random") gateway="random" ;;
         *) args+=("$1") ;;
+    esac
+    case "$?" in
+        0) ;;
+        1) shift ;;
+        *) usage $? ;;
     esac
     shift
 done
