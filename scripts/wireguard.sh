@@ -15,7 +15,7 @@ check_deps() {
     [[ -z $missing ]] || exit 128
 }
 err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
-errx() { err "${*:2}"; rm -f "$credentials"; exit "$1"; }
+errx() { err "${*:2}"; exit "$1"; }
 good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
 info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
 long_opt() {
@@ -118,7 +118,6 @@ unset conf gateway help
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.cfg ]] || conf="$confdir/vpn.cfg"
-credentials="creds.txt"
 deps+=("jq")
 deps+=("wg-quick")
 vpn="$(basename "$(pwd)")"

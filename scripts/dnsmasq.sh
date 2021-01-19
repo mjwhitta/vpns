@@ -31,11 +31,38 @@ subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
 warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
 ### Helpers end
 
-start_dnsmasq() {
+darwin_start_dnsmasq() {
+    local conf
+
+    while read -r conf; do
+        sudo install -g admin -m 644 -o "$(id -nu)" "$conf" \
+            "/usr/local/etc/dnsmasq.d/${conf%%.dnsmasq}.conf"
+    done < <(find . -name "*.dnsmasq"); unset conf
+
+    sudo brew services restart dnsmasq
+
+    case "$(brew services list | grep -ioPs "^dnsmasq\s+\K\S+")" in
+        "stopped") errx 4 "Failed to start dnsmasq" ;;
+    esac
+}
+
+darwin_stop_dnsmasq() {
+    local conf
+
+    while read -r conf; do
+        sudo rm -f "/etc/dnsmasq.d/${conf%%.dnsmasq}.conf"
+    done < <(find . -name "*.dnsmasq"); unset conf
+
+    sudo brew services restart dnsmasq
+}
+
+linux_start_dnsmasq() {
+    local conf
+
     while read -r conf; do
         sudo install -g root -m 644 -o root "$conf" \
             "/etc/dnsmasq.d/${conf%%.dnsmasq}.conf"
-    done < <(find . -name "*.dnsmasq")
+    done < <(find . -name "*.dnsmasq"); unset conf
 
     if [[ -n $(command -v systemctl) ]]; then
         sudo systemctl restart dnsmasq
@@ -57,10 +84,12 @@ start_dnsmasq() {
     fi
 }
 
-stop_dnsmasq() {
+linux_stop_dnsmasq() {
+    local conf
+
     while read -r conf; do
         sudo rm -f "/etc/dnsmasq.d/${conf%%.dnsmasq}.conf"
-    done < <(find . -name "*.dnsmasq")
+    done < <(find . -name "*.dnsmasq"); unset conf
 
     if [[ -n $(command -v systemctl) ]]; then
         case "$(systemctl is-enabled dnsmasq)" in
@@ -73,6 +102,20 @@ stop_dnsmasq() {
             *) sudo rc-service dnsmasq stop ;;
         esac
     fi
+}
+
+start_dnsmasq() {
+    case "$(uname -s)" in
+        "Darwin") darwin_start_dnsmasq ;;
+        *) linux_start_dnsmasq ;;
+    esac
+}
+
+stop_dnsmasq() {
+    case "$(uname -s)" in
+        "Darwin") darwin_stop_dnsmasq ;;
+        *) linux_stop_dnsmasq ;;
+    esac
 }
 
 usage() {
@@ -92,7 +135,15 @@ EOF
 declare -a args deps
 unset help
 color="true"
-deps+=("/etc/dnsmasq.d")
+
+case "$(uname -s)" in
+    "Darwin")
+        deps+=("/usr/local/etc/dnsmasq.d")
+        deps+=("brew")
+        deps+=("ggrep")
+        ;;
+    *) deps+=("/etc/dnsmasq.d") ;;
+esac
 
 # Check for missing dependencies
 check_deps
