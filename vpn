@@ -48,44 +48,41 @@ usage() {
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <action> [vpn]
 
-This is a wrapper script for other vpn scripts. Any OpenVPN provider
-should be supported. Wireguard configs are supported. OpenConnect will
-require some work on the user's part.
+DESCRIPTION
+    This is a wrapper script for other vpn scripts. Any OpenVPN
+    provider should be supported. Wireguard configs are supported.
+    OpenConnect will require some work on the user's part.
 
-Actions:
-    help             Display this help message
-    list             List the vpn options
-    start            Connect to VPN
-    stop             Disconnect from VPN (wireguard only)
-
-Options:
+OPTIONS
     -g, --gw=GW      Use the specified gateway
     -h, --help       Display this help message
     --no-color       Disable colorized output
     -r, --random     Use random VPN gateway
 $(
     if [[ -n $(command -v tmux) ]]; then
-        cat <<EOL
+        cat <<EOS
     -t, --tmux       Use tmux to start VPN connection in background
                      (avoid symlinks for now)
-EOL
+EOS
     fi
 )
     -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
+
+ACTIONS
+    help     Display this help message
+    list     List the vpn options
+    start    Connect to VPN
+    stop     Disconnect from VPN (wireguard only)
 
 EOF
     exit "$1"
 }
 
-declare -a args deps
+declare -a args
 unset action clr conf help gw rand vpn
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f "$confdir/vpn.cfg" ]] || conf="$confdir/vpn.cfg"
-deps+=("jq")
-
-# Check for missing dependencies
-check_deps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -93,7 +90,7 @@ while [[ $# -gt 0 ]]; do
         "--") shift; args+=("$@"); break ;;
         "-g"|"--gw"*) gw="$(long_opt "$@")" ;;
         "-h"|"--help") help="true" ;;
-        "--no-color") clr="--no-color"; unset color ;;
+        "--no-color") unset color; clr="--no-color" ;;
         "-r"|"--random") rand="--random" ;;
         "-t"|"--tmux") tmux="true" ;;
         "-v"|"--vpn"*) vpn="$(long_opt "$@")" ;;
@@ -108,8 +105,15 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
-# Check for valid params
+# Help info
 [[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+deps+=("jq")
+check_deps
+
+# Check for valid params
 [[ $# -gt 0 ]] || usage 1
 
 action="$1"

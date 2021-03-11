@@ -35,36 +35,32 @@ usage() {
     cat <<EOF
 Usage: ${0##*/} [OPTIONS]
 
-Install or uninstall vpn script
+DESCRIPTION
+    Install or uninstall $dst.
 
-Options:
-    -d, --dir=INSTALL_DIR    Install to specified directory
-    -h, --help               Display this help message
-    --no-color               Disable colorized output
-    -u, --uninstall          Uninstall
+OPTIONS
+    -d, --dir=DIR      Install location (default: ~/.local/bin)
+    -h, --help         Display this help message
+    --no-color         Disable colorized output
+    -u, --uninstall    Uninstall
 
 EOF
     exit "$1"
 }
 
-declare -a args deps
+declare -a args
 unset help
 action="install"
-bin="vpn"
 color="true"
-deps+=("install")
-deps+=("sed")
-deps+=("sudo")
-install_dir="$HOME/.local/bin"
-
-# Check for missing dependencies
-check_deps
+dir="$HOME/.local/bin"
+dst="vpn"
+src="vpn"
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
     case "$1" in
         "--") shift; args+=("$@"); break ;;
-        "-d"|"--dir"*) install_dir="$(long_opt "$@")" ;;
+        "-d"|"--dir"*) dir="$(long_opt "$@")" ;;
         "-h"|"--help") help="true" ;;
         "--no-color") unset color ;;
         "-u"|"--uninstall") action="uninstall" ;;
@@ -79,26 +75,35 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
-# Check for valid params
+# Help info
 [[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+deps+=("install")
+deps+=("sed")
+deps+=("sudo")
+check_deps
+
+# Check for valid params
 [[ $# -eq 0 ]] || usage 1
 
 unset sudo
 case "$action" in
     "install")
         info "Installing..."
-        mkdir -p "$install_dir"
-        [[ -w $install_dir ]] || sudo="sudo"
-        $sudo install -m 755 $bin "$install_dir/$bin"
-        $sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" "$install_dir/$bin"
+        mkdir -p "$dir"
+        [[ -w $dir ]] || sudo="sudo"
+        $sudo install -m 755 "$src" "$dir/$dst"
+        $sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" "$dir/$dst"
         ;;
     "uninstall")
-        if [[ -f $install_dir/$bin ]]; then
+        if [[ -f $dir/$dst ]]; then
             info "Uninstalling..."
-            [[ -w $install_dir ]] || sudo="sudo"
-            $sudo rm -f "$install_dir/$bin"
+            [[ -w $dir ]] || sudo="sudo"
+            $sudo rm -f "$dir/$dst"
         else
-            errx 2 "$bin is not installed in $install_dir"
+            errx 2 "$dst is not installed in $dir"
         fi
         ;;
     *) usage 3 ;;

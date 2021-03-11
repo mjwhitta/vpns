@@ -41,7 +41,7 @@ darwin_start_dnsmasq() {
 
     sudo brew services restart dnsmasq
 
-    case "$(brew services list | grep -ioPs "^dnsmasq\s+\K\S+")" in
+    case "$(brew services list | ggrep -ioPs "^dnsmasq\s+\K\S+")" in
         "stopped") errx 4 "Failed to start dnsmasq" ;;
     esac
 }
@@ -122,9 +122,10 @@ usage() {
     cat <<EOF
 Usage: ${0##*/} [OPTIONS] <start|stop>
 
-Dynamically add or remove dnsmasq configs.
+DESCRIPTION
+    Dynamically add or remove dnsmasq configs.
 
-Options:
+OPTIONS
     -h, --help    Display this help message
     --no-color    Disable colorized output
 
@@ -132,21 +133,9 @@ EOF
     exit "$1"
 }
 
-declare -a args deps
+declare -a args
 unset help
 color="true"
-
-case "$(uname -s)" in
-    "Darwin")
-        deps+=("/usr/local/etc/dnsmasq.d")
-        deps+=("brew")
-        deps+=("ggrep")
-        ;;
-    *) deps+=("/etc/dnsmasq.d") ;;
-esac
-
-# Check for missing dependencies
-check_deps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -165,8 +154,22 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
-# Check for valid params
+# Help info
 [[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+case "$(uname -s)" in
+    "Darwin")
+        deps+=("/usr/local/etc/dnsmasq.d")
+        deps+=("brew")
+        deps+=("ggrep")
+        ;;
+    *) deps+=("/etc/dnsmasq.d") ;;
+esac
+check_deps
+
+# Check for valid params
 [[ $# -eq 1 ]] || usage 1
 
 case "$1" in

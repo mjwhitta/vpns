@@ -95,35 +95,31 @@ usage() {
     cat <<EOF
 Usage: vpn [OPTIONS] <action> $provider
 
-Connect to the $name VPN using a set of gateways.
+DESCRIPTION
+    Connect to the $name VPN using a set of gateways.
 
-Actions:
-    help            Display this help message
-    list            List the gateway options
-    start           Connect to VPN
-    stop            Disconnect from VPN
-
-Options:
+OPTIONS
     -g, --gw=GW     Use the specified gateway
     -h, --help      Display this help message
     --no-color      Disable colorized output
     -r, --random    Use random VPN gateway
 
+ACTIONS
+    help     Display this help message
+    list     List the gateway options
+    start    Connect to VPN
+    stop     Disconnect from VPN
+
 EOF
     exit "$1"
 }
 
-declare -a args deps
+declare -a args
 unset conf gateway help
 color="true"
 confdir="$HOME/.config/vpn"
 [[ ! -f $confdir/vpn.cfg ]] || conf="$confdir/vpn.cfg"
-deps+=("jq")
-deps+=("wg-quick")
 vpn="$(basename "$(pwd)")"
-
-# Check for missing dependencies
-check_deps
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -144,8 +140,16 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
 
-# Check for valid params
+# Help info
 [[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+deps+=("jq")
+deps+=("wg-quick")
+check_deps
+
+# Check for valid params
 [[ $# -eq 1 ]] || usage 1
 
 trap stop_vpn SIGINT
