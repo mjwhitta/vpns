@@ -14,10 +14,10 @@ check_deps() {
     done; unset d
     [[ -z $missing ]] || exit 128
 }
-err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
+err() { echo -e "${color:+\e[31m}[!] $*${color:+\e[0m}" >&2; }
 errx() { err "${*:2}"; rm -f "$credentials"; exit "$1"; }
-good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
-info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
+good() { echo -e "${color:+\e[32m}[+] $*${color:+\e[0m}"; }
+info() { echo -e "${color:+\e[37m}[*] $*${color:+\e[0m}"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
@@ -27,8 +27,8 @@ long_opt() {
     echo "$arg"
     return $shift
 }
-subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
-warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
+subinfo() { echo -e "${color:+\e[36m}[=] $*${color:+\e[0m}"; }
+warn() { echo -e "${color:+\e[33m}[-] $*${color:+\e[0m}"; }
 ### Helpers end
 
 conf_get() {
@@ -188,6 +188,7 @@ usage() {
     local name="$(conf_get "name")"
     local provider="$(basename "$(pwd)")"
     # stop            Disconnect from VPN
+
     cat <<EOF
 Usage: vpn [OPTIONS] <action> $provider
 
@@ -195,10 +196,10 @@ DESCRIPTION
     Connect to the $name VPN using a set of gateways.
 
 OPTIONS
-    -g, --gw=GW     Use the specified gateway
-    -h, --help      Display this help message
-    --no-color      Disable colorized output
-    -r, --random    Use random VPN gateway
+    -g, --gw=GW       Use the specified gateway
+    -h, --help        Display this help message
+        --no-color    Disable colorized output
+    -r, --random      Use random VPN gateway
 
 ACTIONS
     help     Display this help message
