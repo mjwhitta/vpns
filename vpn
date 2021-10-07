@@ -61,12 +61,12 @@ OPTIONS
 $(
     if [[ -n $(command -v tmux) ]]; then
         cat <<EOS
-    -t, --tmux       Use tmux to start VPN connection in background
-                     (avoid symlinks for now)
+    -t, --tmux        Use tmux to start VPN connection in background
+                      (avoid symlinks for now)
 EOS
     fi
 )
-    -v, --vpn=VPN    Use the specified VPN (default: $(default_vpn))
+    -v, --vpn=VPN     Use the specified VPN (default: $(default_vpn))
 
 ACTIONS
     help     Display this help message
