@@ -123,14 +123,14 @@ providers="INSTALL_DIR/providers"
 [[ $0 != "./vpn" ]] || providers="providers"
 
 (
-    cd $providers
+    cd $providers # Absolute path
 
     case "$action" in
         "start"|"stop") [[ -n $vpn ]] || vpn="$(default_vpn)" ;;
     esac
     if [[ -n $vpn ]]; then
         [[ -d "$vpn" ]] || errx 2 "$vpn doesn't exist"
-        cd "$vpn"
+        cd "$providers/$vpn"
         case "$(json_get "type" vpn.cfg)" in
             "openconnect") script="./vpn.sh" ;;
             "openvpn") script="../../scripts/openvpn.sh" ;;
@@ -159,6 +159,7 @@ providers="INSTALL_DIR/providers"
             unset detached
 
             if [[ -n $tmux ]] && [[ -n $(command -v tmux) ]]; then
+                # shellcheck disable=SC2153
                 if [[ -n $TMUX ]]; then
                     detached="true"
                     script="tmux new -d -s $vpn $script"
