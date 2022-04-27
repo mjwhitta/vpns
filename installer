@@ -95,7 +95,7 @@ case "$action" in
         mkdir -p "$dir"
         [[ -w $dir ]] || sudo="sudo"
         $sudo install -m 755 "$src" "$dir/$dst"
-        $sudo sed -i -e "s#INSTALL_DIR#$(pwd)#g" "$dir/$dst"
+        $sudo sed -i -e "s#\$INSTALL_DIR#$(pwd)#g" "$dir/$dst"
         ;;
     "uninstall")
         if [[ -f $dir/$dst ]]; then
