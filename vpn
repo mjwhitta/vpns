@@ -119,7 +119,7 @@ check_deps
 action="$1"
 [[ -n $vpn ]] || [[ $# -eq 1 ]] || vpn="$2"
 
-providers="INSTALL_DIR/providers"
+providers="$INSTALL_DIR/providers"
 [[ $0 != "./vpn" ]] || providers="providers"
 
 (
