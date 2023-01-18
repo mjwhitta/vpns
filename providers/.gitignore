@@ -1,6 +1,6 @@
-*
+/*
 !.gitignore
-!pia
-!protonvpn
-!vpnbook
-!windscribe
+!/pia
+!/protonvpn
+!/vpnbook
+!/windscribe
